@@ -651,7 +651,7 @@ fieldset.book-card legend + * {
 .invite-kicker {
   font-size: 18px;
   font-weight: 700;
-  color: var(--olive);
+  color: #4a4d42;
 }
 .invite-lead {
   font-size: 18px;

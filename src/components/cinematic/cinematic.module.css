@@ -238,6 +238,12 @@
       rgba(243, 238, 229, 0.2)
     );
   }
+  /* Labels sit over changing photography: give them their own backing. */
+  .progressLabel span {
+    background: rgba(26, 46, 55, 0.78);
+    padding: 2px 8px;
+    text-shadow: none;
+  }
   /* Clear the fixed 60px mobile booking bar. */
   .progressLabel {
     gap: 14px;

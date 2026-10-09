@@ -280,7 +280,11 @@ export async function handler(
       return response;
     }
     if (route === "bookings")
-      return NextResponse.json({ bookings: listBookings(owner) });
+      return NextResponse.json({
+        bookings: listBookings(owner),
+        signedIn: !!owner,
+        verified: !!guest?.verified,
+      });
     if (path[0] === "bookings" && path[1]) {
       const reference = path[1];
       const booking = authorize(reference, owner);

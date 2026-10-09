@@ -23,7 +23,10 @@ export default async function RoomPage({
     ? null
     : available(search).filter((item) => item.category === id).length;
   return (
-    <Shell title={room.name}>
+    <Shell
+      title={room.name}
+      back={{ href: "/book/rooms?" + searchQuery(search), label: "Rooms" }}
+    >
       <p className="lead">{room.description}</p>
       <div className="j-room-photo" style={{ height: 450 }}>
         <Photo
@@ -60,7 +63,10 @@ export default async function RoomPage({
         </div>
         <div>
           <h2>Sample nightly rate</h2>
-          <p>{money(room.rate)} per night, taxes included. All extras are optional.</p>
+          <p>
+            {money(room.rate)} per night, taxes included. All extras are
+            optional.
+          </p>
           <p>
             Online cancellation until two calendar days before arrival. No real
             charges.
@@ -87,14 +93,8 @@ export default async function RoomPage({
           </div>
         ))}
       </div>
-      <Link
-        className="j-button"
-        href={"/book/rooms?" + searchQuery(search)}
-      >
-        View available rooms
-      </Link>
-      <Link className="text-link" href={"/book/rooms?" + searchQuery(search)}>
-        Back to all results ↗
+      <Link className="j-button" href={"/book/rooms?" + searchQuery(search)}>
+        See prices for your dates
       </Link>
     </Shell>
   );

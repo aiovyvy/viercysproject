@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Shell, useData, api, Feedback, GuestLinks, ApiError } from "./journey";
+import { Shell, useData, api, Feedback, ApiError } from "./journey";
 import { BookingShell, PriceSummary } from "./booking-flow";
 import type { Booking, Pricing } from "@/lib/booking";
 import {
@@ -19,74 +19,89 @@ type StayResponse = {
   booking: Booking;
   email: { kind: string; status: string; error?: string }[];
 };
+export function bookingStatus(booking: Booking) {
+  if (booking.status === "cancelled") return "Cancelled · simulated refund";
+  if (booking.checkin_status === "checked-out") return "Stay completed";
+  if (booking.checkin_status === "checked-in") return "Checked in";
+  return "Confirmed · simulated payment, no real charge";
+}
 export function MyStay() {
   const router = useRouter();
-  const result = useData<{ bookings: Booking[] }>("/api/bookings");
+  const result = useData<{
+    bookings: Booking[];
+    signedIn: boolean;
+    verified: boolean;
+  }>("/api/bookings");
+  const bookings = result.data?.bookings ?? [];
   return (
-    <Shell title="My VIERCYS.">
-      <p>
-        Your reservation, your island rhythm. Use a secure access link to see
-        all stays booked with your email.
-      </p>
-      <div className="j-actions">
-        <Link href="/lookup" className="j-button">
-          Request secure access
-        </Link>
-        <Link href="/profile" className="j-button secondary">
-          Guest profile
-        </Link>
-        <Link href="/concierge" className="j-button secondary">
-          Concierge
-        </Link>
-        <button
-          type="button"
-          className="j-button secondary"
-          onClick={async () => {
-            await api("/api/logout", {});
-            result.refresh();
-            router.refresh();
-          }}
-        >
-          Sign out
-        </button>
-      </div>
+    <BookingShell
+      step={-1}
+      title="My VIERCYS."
+      back={{ href: "/", label: "Home" }}
+    >
       <Feedback error={result.error} loading={result.loading} />
-      {result.data?.bookings.length === 0 && (
-        <div className="notice">
-          <h2>Your next chapter is waiting.</h2>
+      {result.data && bookings.length === 0 && (
+        <section className="book-card" aria-labelledby="none-heading">
+          <h2 id="none-heading">No bookings on this device yet.</h2>
           <p>
-            No reservations are accessible in this browser session. Request a
-            verified link or book a demo stay.
+            Bookings appear here automatically in the browser where you made
+            them. Booked on another device? Find it with your reference and
+            email.
           </p>
-          <Link className="text-link" href="/book">
-            Book your stay ↗
-          </Link>
-        </div>
+          <p className="stay-actions">
+            <Link className="book-button primary" href="/lookup">
+              Find my booking
+            </Link>
+            <Link className="book-button" href="/book">
+              Book a stay
+            </Link>
+          </p>
+        </section>
       )}
-      {result.data?.bookings.map((booking) => (
-        <article className="j-room" key={booking.reference}>
-          <p className="j-status">
-            {booking.status} · {booking.payment_status}
-          </p>
+      {bookings.map((booking) => (
+        <article className="my-booking" key={booking.reference}>
+          <p className="j-status">{bookingStatus(booking)}</p>
           <h2>{booking.reference}</h2>
           <p>
             {formatDate(booking.arrival)} – {formatDate(booking.departure)} ·{" "}
-            {booking.name}
+            {nights(booking)} night{nights(booking) === 1 ? "" : "s"}
             <br />
-            {booking.rooms} rooms · {booking.adults} adults · {booking.children}{" "}
-            children · {money(booking.pricing.total, booking.currency)}
+            {booking.pricing.rooms.map((room) => room.name).join(", ")} ·{" "}
+            {booking.adults} adult{booking.adults === 1 ? "" : "s"}
+            {booking.children
+              ? `, ${booking.children} child${booking.children === 1 ? "" : "ren"}`
+              : ""}
+            <br />
+            Simulated amount due:{" "}
+            {money(booking.pricing.total, booking.currency)}
           </p>
-          <Link href={"/booking/" + booking.reference} className="j-button">
-            View your stay
+          <Link
+            href={"/booking/" + booking.reference}
+            className="book-button primary"
+          >
+            View booking
           </Link>
         </article>
       ))}
-      <p className="j-note">
-        Install My VIERCYS from your browser menu for a mobile companion.
-        Booking details require a connection and a secure session; they are not
-        cached offline.
-      </p>
-    </Shell>
+      {bookings.length > 0 && (
+        <p className="book-change-links">
+          <Link href="/lookup">Find another booking</Link>
+          <Link href="/book">Book another stay</Link>
+          {result.data?.verified && <Link href="/profile">Guest profile</Link>}
+          <button
+            type="button"
+            className="book-text-button"
+            onClick={async () => {
+              await api("/api/logout", {});
+              result.refresh();
+              router.refresh();
+            }}
+          >
+            Forget bookings on this device
+          </button>
+        </p>
+      )}
+    </BookingShell>
   );
 }
 const EMAIL_STATUS: Record<string, string> = {
@@ -974,7 +989,10 @@ export function Receipt({ reference }: { reference: string }) {
   const result = useData<StayResponse>("/api/bookings/" + reference);
   const booking = result.data?.booking;
   return (
-    <Shell title="Your VIERCYS receipt.">
+    <Shell
+      title="Receipt."
+      back={{ href: "/booking/" + reference, label: "Your booking" }}
+    >
       <Feedback error={result.error} loading={result.loading} />
       {booking && (
         <>
@@ -984,12 +1002,18 @@ export function Receipt({ reference }: { reference: string }) {
             VIERCYS Santorini · {formatDate(booking.arrival)} –{" "}
             {formatDate(booking.departure)}
             <br />
-            {booking.adults} adults · {booking.children} children · Rooms{" "}
-            {booking.pricing.rooms.map((room) => room.number).join(", ")}
+            {booking.adults} adult{booking.adults === 1 ? "" : "s"}
+            {booking.children
+              ? `, ${booking.children} child${booking.children === 1 ? "" : "ren"}`
+              : ""}{" "}
+            ·{" "}
+            {booking.pricing.rooms
+              .map((room) => `${room.name} (no. ${room.number})`)
+              .join(", ")}
           </p>
           <p className="receipt-notice">
-            Fictional property · {booking.status} · {booking.payment_status} ·
-            No real charge
+            {bookingStatus(booking)}. VIERCYS is a fictional property; this
+            receipt is not proof of a real payment.
           </p>
           <PriceSummary pricing={booking.pricing} currency={booking.currency} />
           <div className="j-actions">
@@ -1012,16 +1036,17 @@ export function Receipt({ reference }: { reference: string }) {
 export function EmailPreview({ reference }: { reference: string }) {
   const result = useData<StayResponse>("/api/bookings/" + reference);
   return (
-    <Shell title="A considered confirmation.">
+    <Shell
+      title="Your confirmation email."
+      back={{ href: "/booking/" + reference, label: "Your booking" }}
+    >
       <Feedback error={result.error} loading={result.loading} />
       {result.data && (
         <>
           <p>
-            Branded email QA preview. Delivery status:{" "}
-            {result.data.email[0]?.status || "queued"}. Preview does not mean
-            sent or delivered.
+            {EMAIL_STATUS[result.data.email[0]?.status] ||
+              "This is the email for your booking."}
           </p>
-          <GuestLinks reference={reference} />
           <iframe
             className="email-frame"
             title="VIERCYS transactional email preview"

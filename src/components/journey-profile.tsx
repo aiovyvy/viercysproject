@@ -9,7 +9,10 @@ export default function Profile() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   return (
-    <Shell title="Your VIERCYS profile.">
+    <Shell
+      title="Guest profile."
+      back={{ href: "/my-stay", label: "My VIERCYS" }}
+    >
       <Feedback error={result.error || error} loading={result.loading} />
       {result.error && (
         <Link className="j-button" href="/lookup">

@@ -8,7 +8,9 @@ function day(ms: number) {
   return new Date(ms).toISOString().slice(0, 10);
 }
 export function InviteManager({ manager }: { manager: boolean }) {
-  const list = useData<{ invites: InviteRow[]; now: number }>("/api/admin/invites");
+  const list = useData<{ invites: InviteRow[]; now: number }>(
+    "/api/admin/invites",
+  );
   const [created, setCreated] = useState<Created[]>([]);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);

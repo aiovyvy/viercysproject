@@ -65,7 +65,10 @@ export function Journey({ reference }: { reference: string }) {
     setMessage("Unsaved itinerary edits.");
   }
   return (
-    <Shell title="Your Journey.">
+    <Shell
+      title="Plan your visit."
+      back={{ href: "/booking/" + reference, label: "Your booking" }}
+    >
       <GuestLinks reference={reference} />
       <Feedback
         error={stay.error || stored.error || error}

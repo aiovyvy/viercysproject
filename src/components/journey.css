@@ -1,108 +1,158 @@
-﻿.journey-main {
-  max-width: 1500px;
-  margin: auto;
+/* Secondary guest, room and staff pages. Shares the booking-flow look
+   (booking-flow.css provides .book-main, cards and buttons); the j-* names
+   are kept so existing page markup keeps working. Body >= 16px, labels
+   >= 14px, controls >= 44px, AA contrast on ivory. */
+.journey-main {
+  max-width: 1180px;
 }
-.journey-main h1 {
-  font-size: clamp(44px, 5vw, 72px);
+.journey-main p,
+.journey-main li,
+.journey-main dd,
+.journey-main dt {
+  font-size: 17px;
+  line-height: 1.6;
+}
+.journey-main ul {
+  list-style: disc;
+  padding-left: 22px;
+}
+.shell-eyebrow {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #4f5348;
+  margin-top: 12px;
 }
 .journey-main h2 {
-  font-size: 32px;
-  margin: 18px 0;
+  font-size: 26px;
+  line-height: 1.2;
+  margin: 22px 0 12px;
+  color: var(--blue);
 }
 .journey-main h3 {
-  font-size: 26px;
-  margin: 12px 0;
-}
-.journey-main p {
-  line-height: 1.8;
-}
-.demo-banner {
-  padding: 15px 20px;
-  background: #233f4b;
-  color: #f3eee5;
-  margin: 25px 0;
-  font-size: 14px;
+  font-size: 21px;
+  margin: 10px 0;
+  color: var(--blue);
 }
 .journey-links {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   flex-wrap: wrap;
-  margin: 25px 0;
+  margin: 18px 0 22px;
 }
-.journey-links a,
+.journey-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 2px solid var(--blue);
+  border-radius: 999px;
+  color: var(--blue);
+  font-size: 16px;
+  font-weight: 700;
+  background: #fff;
+}
 .j-button {
-  background: #233f4b;
-  color: #f3eee5;
-  padding: 14px 20px;
-  border: 1px solid #233f4b;
-  min-height: 48px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  min-height: 52px;
+  padding: 0 24px;
+  font-size: 17px;
+  font-weight: 700;
+  border: 2px solid var(--blue);
+  border-radius: 4px;
+  background: var(--blue);
+  color: var(--ivory);
   cursor: pointer;
+  text-align: center;
 }
 .j-button.secondary {
-  background: transparent;
-  color: #233f4b;
+  background: #fff;
+  color: var(--blue);
 }
 .j-button:disabled {
-  opacity: 0.5;
-  cursor: default;
+  background: #c9c3b8;
+  border-color: #c9c3b8;
+  color: #4a4a44;
+  cursor: not-allowed;
 }
 .j-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 24px;
-  margin: 30px 0;
+  grid-template-columns: 1fr;
+  gap: 18px;
+  margin: 22px 0;
 }
-.j-panel {
-  border: 1px solid #c6ad85;
-  padding: 24px;
-  background: #f9f5ee;
+.j-panel,
+.j-summary,
+.j-alert {
+  border: 1px solid #cfc4b3;
+  background: #fbf8f2;
+  padding: 20px 16px;
+  margin: 0 0 18px;
+}
+.j-alert {
+  border-left: 5px solid var(--olive);
+}
+.j-panel summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--blue);
+  cursor: pointer;
 }
 .j-room {
-  border-top: 1px solid #737766;
-  padding: 25px 0;
+  border: 1px solid #cfc4b3;
+  background: #fbf8f2;
+  padding: 18px 16px;
+  margin: 0 0 16px;
 }
 .j-room-photo {
   position: relative;
-  height: 250px;
-  margin-bottom: 20px;
+  height: 240px;
+  margin-bottom: 14px;
   overflow: hidden;
 }
 .j-row {
   display: flex;
-  gap: 20px;
+  gap: 14px;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  margin: 18px 0;
+  margin: 16px 0;
 }
 .j-fields {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  margin: 25px 0;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin: 18px 0;
 }
 .j-fields label,
 .j-label {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  font-size: 16px;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #34382f;
 }
 .j-fields input,
 .j-fields select,
 .j-fields textarea,
 .j-input {
-  font-size: 16px;
-  min-height: 48px;
+  font: inherit;
+  font-size: 17px;
+  font-weight: 400;
+  min-height: 52px;
   width: 100%;
-  padding: 12px;
-  border: 1px solid #737766;
-  background: #fffaf3;
-  color: #292c28;
+  padding: 12px 14px;
+  border: 2px solid #8a8d7e;
+  border-radius: 4px;
+  background: #fff;
+  color: var(--ink);
 }
 .j-fields textarea {
   min-height: 100px;
@@ -113,92 +163,100 @@
 .j-check {
   display: flex;
   gap: 12px;
-  align-items: flex-start;
-  line-height: 1.7;
-  margin: 20px 0;
+  align-items: center;
+  min-height: 44px;
+  font-size: 16px;
+  margin: 12px 0;
 }
 .j-check input {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   flex-shrink: 0;
-  accent-color: #233f4b;
-  margin-top: 3px;
-}
-.j-summary {
-  background: #e7e0d4;
-  padding: 25px;
-  margin: 25px 0;
+  accent-color: var(--blue);
 }
 .j-summary dl {
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 15px;
-  margin: 20px 0;
+  gap: 12px;
+  margin: 14px 0;
 }
 .j-summary dt,
 .j-summary dd {
   margin: 0;
-  line-height: 1.6;
 }
 .j-summary .total {
-  font-weight: bold;
-  font-size: 22px;
-  border-top: 1px solid #737766;
-  padding-top: 16px;
+  font-weight: 700;
+  font-size: 21px;
+  border-top: 1px solid #8a8d7e;
+  padding-top: 14px;
 }
 .j-note {
-  font-size: 14px;
-  color: #465349;
-  line-height: 1.8;
+  font-size: 15px;
+  color: #4f5348;
+  line-height: 1.6;
+}
+.journey-main .j-note {
+  font-size: 15px;
 }
 .j-actions {
   display: flex;
-  gap: 15px;
+  gap: 10px;
   flex-wrap: wrap;
-  margin-top: 25px;
+  margin-top: 20px;
 }
 .j-steps {
   display: flex;
-  gap: 30px;
-  padding: 20px 0;
-  border-bottom: 1px solid #c6ad85;
+  gap: 24px;
+  padding: 16px 0;
+  border-bottom: 1px solid #cfc4b3;
   flex-wrap: wrap;
 }
 .j-table-wrap {
   overflow: auto;
+  margin: 0 0 18px;
+}
+.j-table-wrap:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
 }
 .j-table {
   border-collapse: collapse;
   width: 100%;
-  font-size: 15px;
+  font-size: 16px;
+  background: #fbf8f2;
 }
 .j-table th,
 .j-table td {
   text-align: left;
   vertical-align: top;
-  padding: 15px;
-  border-bottom: 1px solid #c6ad85;
+  padding: 12px;
+  border-bottom: 1px solid #cfc4b3;
+  line-height: 1.5;
 }
 .j-table th {
-  background: #233f4b;
-  color: #f3eee5;
+  background: var(--blue);
+  color: var(--ivory);
+}
+.j-table tbody th {
+  background: #ece5d9;
+  color: var(--ink);
 }
 .j-table a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--blue);
   text-decoration: underline;
   text-underline-offset: 4px;
 }
 .j-error {
   color: #8b2d24;
 }
-.j-alert {
-  border-left: 3px solid #c6ad85;
-  padding: 20px;
-  background: #e7e0d4;
-  margin: 25px 0;
-}
 .j-day {
-  border-top: 1px solid #737766;
-  padding: 25px 0;
+  border: 1px solid #cfc4b3;
+  background: #fbf8f2;
+  padding: 18px 16px;
+  margin: 0 0 16px;
 }
 .j-day textarea {
   min-height: 100px;
@@ -206,144 +264,91 @@
 .email-frame {
   width: 100%;
   height: 1000px;
-  border: 1px solid #c6ad85;
+  border: 1px solid #cfc4b3;
   background: white;
 }
 .j-status {
-  font-size: 14px;
-  letter-spacing: 0.04em;
-}
-.j-room ul {
-  padding-left: 20px;
-  line-height: 1.8;
-}
-.j-room .j-input {
-  max-width: 120px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #4f5348;
 }
 .j-filter {
   max-width: 260px;
 }
 .j-tabs {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 .j-tabs button {
   min-height: 44px;
-  padding: 10px 16px;
-  background: transparent;
-  border: 1px solid #233f4b;
+  padding: 0 16px;
+  font-size: 16px;
+  font-weight: 700;
+  background: #fff;
+  color: var(--blue);
+  border: 2px solid var(--blue);
+  border-radius: 999px;
 }
 .j-tabs button[aria-pressed="true"] {
-  background: #233f4b;
-  color: #f3eee5;
+  background: var(--blue);
+  color: var(--ivory);
 }
 .j-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--blue);
   text-decoration: underline;
   text-underline-offset: 4px;
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: 16px;
 }
 .j-metrics {
   display: flex;
-  gap: 25px;
+  gap: 24px;
   flex-wrap: wrap;
-  padding: 24px;
-  background: #e7e0d4;
+  padding: 20px;
+  background: #ece5d9;
+  font-size: 16px;
 }
 .j-metrics strong {
   font-size: 28px;
   display: block;
+  color: var(--blue);
 }
 .j-calendar {
   display: grid;
-  grid-template-columns: repeat(14, minmax(40px, 1fr));
-  font-size: 12px;
+  grid-template-columns: repeat(14, minmax(44px, 1fr));
+  font-size: 14px;
   gap: 3px;
-  min-width: 650px;
+  min-width: 700px;
 }
 .j-calendar span {
-  padding: 10px 5px;
-  background: #e7e0d4;
+  padding: 10px 4px;
+  background: #ece5d9;
   text-align: center;
 }
 .j-calendar span.occupied {
-  background: #233f4b;
+  background: var(--blue);
   color: white;
 }
 .j-calendar span.blocked {
-  background: #737766;
+  background: #5b5e52;
   color: white;
 }
-@media (max-width: 899px) {
-  .j-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-  .j-fields {
-    grid-template-columns: 1fr 1fr;
-  }
-  .journey-main {
-    padding: 45px 6% 70px;
-  }
-  .j-table {
-    font-size: 14px;
-  }
+.my-booking {
+  border: 1px solid #cfc4b3;
+  background: #fbf8f2;
+  padding: 18px 16px;
+  margin: 0 0 16px;
 }
-@media (max-width: 600px) {
-  .j-grid,
-  .j-fields {
-    grid-template-columns: 1fr;
-  }
-  .j-row {
-    gap: 14px;
-  }
-  .j-panel {
-    padding: 20px;
-  }
-  .j-room-photo {
-    height: 290px;
-  }
-  .j-summary {
-    padding: 20px;
-  }
-  .j-summary dl {
-    grid-template-columns: 1fr auto;
-    font-size: 14px;
-  }
-  .journey-links a {
-    padding: 12px 14px;
-    font-size: 14px;
-  }
-  .journey-main h1 {
-    font-size: 46px;
-  }
-  .j-actions > * {
-    width: 100%;
-  }
-  .j-steps {
-    gap: 15px;
-  }
-  .j-table th,
-  .j-table td {
-    padding: 12px 8px;
-  }
-}
-@media print {
-  .journey-links,
-  .j-actions,
-  .j-button,
-  .demo-banner {
-    display: none !important;
-  }
-  .journey-main {
-    padding: 20px;
-    max-width: 100%;
-  }
-  .j-summary {
-    background: white;
-    border: 1px solid #737766;
-  }
-  .receipt-notice {
-    display: block !important;
-  }
+.my-booking h2 {
+  margin: 4px 0 8px;
+  font-size: 22px;
+  overflow-wrap: anywhere;
 }
 .invite-created {
   list-style: decimal;
@@ -356,4 +361,34 @@
 }
 .invite-created code {
   font-size: 15px;
+}
+@media (min-width: 760px) {
+  .j-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .j-fields {
+    grid-template-columns: 1fr 1fr;
+  }
+  .j-panel,
+  .j-summary,
+  .j-alert,
+  .j-room,
+  .j-day,
+  .my-booking {
+    padding: 24px;
+  }
+}
+@media print {
+  .journey-links,
+  .j-actions,
+  .j-button {
+    display: none !important;
+  }
+  .journey-main {
+    padding: 20px;
+    max-width: 100%;
+  }
+  .receipt-notice {
+    display: block !important;
+  }
 }

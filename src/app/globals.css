@@ -1387,3 +1387,64 @@ footer > div {
     font-weight: 700;
   }
 }
+/* Footer (QA group 4): full site navigation, readable and tappable. */
+footer {
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 28px 48px;
+}
+.footer-brand p {
+  font-family: Georgia, serif;
+  font-style: italic;
+  font-size: 19px;
+  margin-top: 12px;
+}
+.footer-links {
+  display: flex;
+  gap: 8px 56px;
+  flex-wrap: wrap;
+}
+.footer-links ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.footer-links a,
+.footer-legal a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 16px;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-color: #8a8d7e;
+}
+footer > .footer-legal {
+  flex-basis: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 15px;
+  color: #4f5348;
+}
+footer > .footer-legal small {
+  font-size: 14px;
+  color: #4f5348;
+}
+@media (max-width: 600px) {
+  footer {
+    flex-direction: column;
+  }
+  .footer-links {
+    gap: 0 40px;
+  }
+}
+/* Contrast (QA group 4): olive-on-ivory captions measured 3.99:1. */
+.all-destinations .destination-meta > span {
+  color: #4a4d42;
+}
+footer .wordmark {
+  display: inline-block;
+  padding: 4px 0;
+}

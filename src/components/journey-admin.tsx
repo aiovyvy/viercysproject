@@ -29,12 +29,30 @@ type Dashboard = {
   today: string;
   report: { occupiedRooms: number; demoRevenue: number; upcoming: number };
 };
+const STATUS_LABELS: Record<string, string> = {
+  confirmed: "Confirmed",
+  cancelled: "Cancelled",
+  "demo-paid": "Simulated payment",
+  "demo-refunded": "Simulated refund",
+  "demo-adjustment": "Simulated adjustment",
+  "not-arrived": "Not arrived",
+  "demo-prechecked": "Pre-checked in (demo)",
+  "checked-in": "Checked in",
+  "checked-out": "Checked out",
+};
+function statusLabel(value: string) {
+  return STATUS_LABELS[value] ?? value;
+}
 export function StaffLogin() {
   const router = useRouter();
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   return (
-    <Shell title="Staff access." eyebrow="VIERCYS OPERATIONS">
+    <Shell
+      title="Staff sign-in."
+      eyebrow="Staff only"
+      back={{ href: "/", label: "Home" }}
+    >
       <p>
         Staff access is separate from guest access. Local demo credentials are
         generated into the private data/demo-staff.json file by the seed script.
@@ -112,7 +130,7 @@ export function StaffDashboard() {
         ),
     ) || [];
   return (
-    <Shell title="A considered operation." eyebrow="AUTHORIZED STAFF PORTAL">
+    <Shell title="Staff dashboard." eyebrow="Staff only">
       <Feedback error={result.error || error} loading={result.loading} />
       {data && (
         <>
@@ -225,11 +243,11 @@ export function StaffDashboard() {
                           {booking.adults} adults / {booking.children} children
                         </td>
                         <td>
-                          {booking.status}
+                          {statusLabel(booking.status)}
                           <br />
-                          {booking.payment_status}
+                          {statusLabel(booking.payment_status)}
                           <br />
-                          {booking.checkin_status}
+                          {statusLabel(booking.checkin_status)}
                           <br />
                           {booking.invite_id ? "Demo voucher" : "No voucher"}
                           <br />
@@ -311,7 +329,8 @@ export function StaffDashboard() {
                           <Link href={"/booking/" + b.reference}>
                             {b.reference}
                           </Link>{" "}
-                          · {b.arrival} – {b.departure} · {b.status}
+                          · {b.arrival} – {b.departure} ·{" "}
+                          {statusLabel(b.status)}
                         </p>
                       ))}
                     </article>
@@ -539,7 +558,7 @@ export function StaffDashboard() {
                     {data.payments.map((payment, index) => (
                       <tr key={index}>
                         <td>{payment.reference}</td>
-                        <td>{payment.status}</td>
+                        <td>{statusLabel(String(payment.status))}</td>
                         <td>{money(payment.amount, payment.currency)}</td>
                         <td>{payment.created_at}</td>
                       </tr>

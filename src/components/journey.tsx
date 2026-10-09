@@ -3,27 +3,43 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Navigation, Footer } from "@/app/experience";
 import "./journey.css";
+import "./booking-flow.css";
 import { CURRENCY } from "@/lib/catalog";
+/**
+ * Layout for guest, room and staff pages. Matches the booking flow: one
+ * heading, an optional back link, and a single quiet disclosure line in
+ * place of the old dark "demo" banner.
+ */
 export function Shell({
   title,
-  eyebrow = "VIERCYS SANTORINI",
+  eyebrow,
+  back,
   children,
 }: {
   title: string;
   eyebrow?: string;
+  back?: { href: string; label: string };
   children: React.ReactNode;
 }) {
   return (
     <>
       <Navigation />
-      <main id="main" className="inner-main journey-main">
-        <p className="eyebrow">{eyebrow}</p>
+      <main id="main" className="book-main journey-main">
+        {back && (
+          <div className="book-top">
+            <Link className="book-back" href={back.href}>
+              <span aria-hidden="true">←</span> {back.label}
+            </Link>
+          </div>
+        )}
+        {eyebrow && <p className="shell-eyebrow">{eyebrow}</p>}
         <h1>{title}</h1>
-        <p className="demo-banner">
-          Fictional property · Persistent local demo · Sample {CURRENCY} prices
-          · No real payments
-        </p>
         {children}
+        <p className="book-footnote">
+          VIERCYS is a fictional hotel created for a classroom demonstration.
+          Prices are simulated in {CURRENCY}; no real payment, travel or
+          accommodation is booked.
+        </p>
       </main>
       <Footer />
     </>
@@ -122,11 +138,9 @@ export function Feedback({
 export function GuestLinks({ reference }: { reference: string }) {
   return (
     <nav className="journey-links" aria-label="Your stay">
-      <Link href={`/booking/${reference}`}>My Stay</Link>
-      <Link href={`/itinerary/${reference}`}>Your Journey</Link>
-      <Link href="/concierge">Concierge</Link>
+      <Link href={`/booking/${reference}`}>Your booking</Link>
+      <Link href={`/itinerary/${reference}`}>Plan your visit</Link>
       <Link href={`/booking/${reference}/receipt`}>Receipt</Link>
-      <Link href={`/booking/${reference}/email-preview`}>Email preview</Link>
     </nav>
   );
 }

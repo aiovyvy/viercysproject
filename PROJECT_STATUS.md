@@ -35,6 +35,18 @@ The previous version of this file reported the voucher, invite route and tutoria
 | Jargon: "Select exactly the requested number of different rooms" when no room was chosen | "Choose a room first" with a link back | `deadends.spec.ts` |
 | **New bug found while testing:** each booking replaced the browser's guest session, so a second booking in the same browser locked the guest out of the first | Unverified guest sessions now hold up to 10 booking references; a verified email session is never downgraded | Unit test (both bookings readable, a stranger's session is not); `deadends.spec.ts` relies on it |
 
+### Group 4: standard pages, consistent design, contrast (done, tested)
+
+| Audit item | Fix | Test |
+| --- | --- | --- |
+| M2: no About, Contact, FAQ, Privacy, Terms or Accessibility pages; footer had two links | All six pages exist on a shared `InfoPage` layout. Privacy lists exactly what is stored, where, the four cookies and how data is deleted; Accessibility states what was and was **not** tested. The footer links to all of them plus Santorini, Destinations, Book a stay, Find my booking and a small Staff link | `site.spec.ts`: every footer link opens a page with header, heading and footer |
+| M3: secondary pages used the old look, the dark "Fictional property · Persistent local demo…" banner, and raw codes ("confirmed · demo-paid", "1 rooms", "Rooms 101") | The shared `Shell` now uses the booking-flow layout with a back link and one quiet disclosure line. `journey.css` was rewritten to the same type, cards, buttons and 44px controls, keeping its class names. My VIERCYS shows booking cards with plain status, "Forget bookings on this device" only when there is something to forget, and no PWA blurb. Receipt, email preview, itinerary, profile, room detail, compare and admin got plain titles and back links; admin statuses read "Simulated payment", "Not arrived", etc. | `site.spec.ts`: 16 guest pages contain no raw codes or banner, and every one still discloses that the hotel is fictional |
+| M8: contrast failures (invite kicker, destination labels, homepage progress labels over photos) | Darker olive (#4a4d42) for small captions; progress labels get a dark backing on phones | `site.spec.ts`: axe-core (now a dev dependency) finds **no serious or critical WCAG A/AA violations on 22 pages**, including the homepage, booking steps and admin |
+| L (from the same scan): compare table not keyboard-reachable | Table region is focusable and labelled | axe scan |
+| Readability and tap targets | No sideways scrolling at 320px on 15 pages; every control and footer link at least 44px tall (the footer wordmark was 43px and was fixed) | `site.spec.ts` |
+| Error page had no header or footer | Added | build |
+| Keyboard | A booking can be completed from room choice to confirmation with the keyboard alone | `site.spec.ts` |
+
 Test-only: Playwright sets `VIERCYS_DEV_OUTBOX` so access emails that can't be sent are appended to a server-side file the tests read. Nothing reads it over HTTP; leave it unset for classroom use.
 
 ## Verification on 10 October 2026

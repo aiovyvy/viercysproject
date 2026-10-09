@@ -364,15 +364,56 @@ export default function Home() {
 export function Footer() {
   return (
     <footer>
-      <Link href="/" className="wordmark">
-        VIERCYS<span>HOTELS & RESORTS</span>
-      </Link>
-      <p>Where Earth Meets the Sea.</p>
-      <div>
-        <Link href="/santorini">Discover Santorini ↗</Link>
-        <span>© {new Date().getFullYear()} VIERCYS · Concept property</span>
+      <div className="footer-brand">
+        <Link href="/" className="wordmark">
+          VIERCYS<span>HOTELS & RESORTS</span>
+        </Link>
+        <p>Where Earth Meets the Sea.</p>
+      </div>
+      <nav className="footer-links" aria-label="Footer">
+        <ul>
+          <li>
+            <Link href="/santorini">Santorini</Link>
+          </li>
+          <li>
+            <Link href="/destinations">Destinations</Link>
+          </li>
+          <li>
+            <Link href="/about">About</Link>
+          </li>
+          <li>
+            <Link href="/faq">FAQ</Link>
+          </li>
+          <li>
+            <Link href="/contact">Contact</Link>
+          </li>
+        </ul>
+        <ul>
+          <li>
+            <Link href="/book">Book a stay</Link>
+          </li>
+          <li>
+            <Link href="/lookup">Find my booking</Link>
+          </li>
+          <li>
+            <Link href="/privacy">Privacy</Link>
+          </li>
+          <li>
+            <Link href="/terms">Terms</Link>
+          </li>
+          <li>
+            <Link href="/accessibility">Accessibility</Link>
+          </li>
+        </ul>
+      </nav>
+      <div className="footer-legal">
+        <span>
+          © {new Date().getFullYear()} VIERCYS · Fictional concept hotel
+        </span>
         <small>
-          Temporary editorial photography · Not original property photographs.
+          Classroom demonstration: no real bookings or payments. Temporary
+          editorial photography, not original property photographs.{" "}
+          <Link href="/admin">Staff</Link>
         </small>
       </div>
     </footer>

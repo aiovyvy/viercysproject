@@ -46,7 +46,7 @@ test("a booking can only be opened with its reference and matching email", async
   // Opening someone else's link explains how to get in instead of a dead end.
   await page.goto("/booking/" + booking.reference);
   await expect(page.getByText(/reference and the email/)).toBeVisible();
-  await page.getByRole("link", { name: "Find my booking" }).click();
+  await page.locator("main").getByRole("link", { name: "Find my booking" }).click();
   await expect(page.getByLabel("Booking reference")).toHaveValue(
     booking.reference,
   );

@@ -19,7 +19,10 @@ export default async function Compare({
   const error = validateSearch(search);
   const rooms = error ? [] : available(search);
   return (
-    <Shell title="A space that fits you.">
+    <Shell
+      title="Compare rooms."
+      back={{ href: "/book/rooms?" + searchQuery(search), label: "Rooms" }}
+    >
       <p>
         Compare up to three categories. Per-date inventory below reflects your
         search.
@@ -29,7 +32,12 @@ export default async function Compare({
           {error}
         </div>
       )}
-      <div className="j-table-wrap">
+      <div
+        className="j-table-wrap"
+        tabIndex={0}
+        role="region"
+        aria-label="Room comparison table, scrolls sideways"
+      >
         <table className="j-table">
           <thead>
             <tr>

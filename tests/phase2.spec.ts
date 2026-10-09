@@ -99,7 +99,7 @@ test("romantic booking, post-booking itinerary, email preview and staff visibili
   await staff.getByLabel("Staff password").fill("Test-only-password-2026!");
   await staff.getByRole("button", { name: "Sign in to staff portal" }).click();
   await expect(
-    staff.getByRole("heading", { name: "A considered operation." }),
+    staff.getByRole("heading", { name: "Staff dashboard." }),
   ).toBeVisible();
   await expect(
     staff.getByRole("link", { name: reference, exact: true }),
