@@ -147,7 +147,7 @@ export default function SuitePreview({
             appear in the booking summary.
           </p>
           <Link
-            href={"/availability?category=" + encodeURIComponent(category.id)}
+            href="/book"
             className={styles.action}
           >
             Check availability <span aria-hidden="true">↗</span>

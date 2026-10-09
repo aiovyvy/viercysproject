@@ -74,7 +74,7 @@ export default async function Compare({
           </tbody>
         </table>
       </div>
-      <Link className="j-button" href={"/availability?" + searchQuery(search)}>
+      <Link className="j-button" href={"/book/rooms?" + searchQuery(search)}>
         Return to room selection
       </Link>
     </Shell>

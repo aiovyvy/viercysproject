@@ -77,8 +77,9 @@ export function validateSearch(
 }
 export function searchFrom(params: Record<string, unknown>): SearchInput {
   return {
-    arrival: String(params.arrival ?? addDays(propertyToday(), 1)),
-    departure: String(params.departure ?? addDays(propertyToday(), 4)),
+    // Default to a three-night stay a week out, inside the online-change window.
+    arrival: String(params.arrival ?? addDays(propertyToday(), 7)),
+    departure: String(params.departure ?? addDays(propertyToday(), 10)),
     adults: Number(params.adults ?? 2),
     children: Number(params.children ?? 0),
     rooms: Number(params.rooms ?? 1),

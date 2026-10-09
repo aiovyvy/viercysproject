@@ -61,7 +61,7 @@ export default async function Preview({
         <Link className="text-link" href="/destinations">
           Back to the collection ↗
         </Link>
-        <Link className="text-link" href="/availability">
+        <Link className="text-link" href="/book">
           Search our Santorini demo inventory ↗
         </Link>
       </main>

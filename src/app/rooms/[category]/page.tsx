@@ -89,11 +89,11 @@ export default async function RoomPage({
       </div>
       <Link
         className="j-button"
-        href={"/availability?" + searchQuery(search) + "&category=" + room.id}
+        href={"/book/rooms?" + searchQuery(search)}
       >
         View available rooms
       </Link>
-      <Link className="text-link" href={"/availability?" + searchQuery(search)}>
+      <Link className="text-link" href={"/book/rooms?" + searchQuery(search)}>
         Back to all results ↗
       </Link>
     </Shell>

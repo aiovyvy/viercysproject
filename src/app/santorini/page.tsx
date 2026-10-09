@@ -18,7 +18,7 @@ export default function Santorini() {
           intimate spaces, one considered philosophy: give every moment room to
           breathe.
         </p>
-        <Link className="closing-cta" href="/availability">
+        <Link className="closing-cta" href="/book">
           Book your stay <span>↗</span>
         </Link>
         <div className="property-banner">

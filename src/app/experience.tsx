@@ -2,11 +2,10 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { photos } from "./data";
-import { ReservationForm } from "@/components/reservation-form";
-export { ReservationForm } from "@/components/reservation-form";
 import SuitePreview from "@/components/cinematic/SuitePreview";
 import { CATEGORIES, CURRENCY } from "@/lib/catalog";
 import ArchitecturalJourney from "@/components/cinematic/ArchitecturalJourney";
@@ -34,8 +33,32 @@ export function Photo({
     />
   );
 }
+function useVoucherActive() {
+  const [active, setActive] = useState(false);
+  useEffect(() => {
+    let live = true;
+    fetch("/api/invite", { cache: "no-store" })
+      .then((response) => response.json())
+      .then((result) => live && setActive(result.active === true))
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, []);
+  return active;
+}
+export function BookLink({ className }: { className: string }) {
+  const voucher = useVoucherActive();
+  return (
+    <Link className={className} href="/book">
+      {voucher ? "Claim your 3-night stay" : "Book a stay"}
+    </Link>
+  );
+}
 export function Navigation() {
   const [open, setOpen] = useState(false);
+  const path = usePathname();
+  const inFlow = path.startsWith("/book") || path.startsWith("/invite");
   return (
     <>
       <a className="skip" href="#main">
@@ -62,9 +85,7 @@ export function Navigation() {
             Concierge
           </Link>
         </nav>
-        <Link className="book" href="/availability">
-          Book your stay <span>↗</span>
-        </Link>
+        {!inFlow && <BookLink className="book" />}
         <button
           className="menu"
           aria-label={open ? "Close navigation" : "Open navigation"}
@@ -74,9 +95,7 @@ export function Navigation() {
           {open ? "Close" : "Menu"}
         </button>
       </header>
-      <Link className="mobile-book-action" href="/availability">
-        Book your stay ↗
-      </Link>
+      {!inFlow && <BookLink className="mobile-book-action" />}
     </>
   );
 }
@@ -176,9 +195,7 @@ export default function Home() {
             </h1>
             <div className="hero-bottom">
               <div>
-                <Link className="hero-book" href="/availability">
-                  Book your stay ↗
-                </Link>
+                <BookLink className="hero-book" />
                 <p>
                   A quieter world. A deeper blue.
                   <br />A place to return to yourself.
@@ -198,24 +215,24 @@ export default function Home() {
               You book the stay. <em>We curate the experience.</em>
             </p>
           </div>
-          <ReservationForm />
           <ol className="booking-steps" aria-label="How booking works">
             <li>
-              <strong>1. Find your room</strong>
-              <span>Choose dates and compare available spaces.</span>
+              <strong>1. Choose your dates</strong>
+              <span>Three nights are suggested; stay longer if you like.</span>
             </li>
             <li>
-              <strong>2. Curate your escape</strong>
-              <span>Add experiences or skip straight to checkout.</span>
+              <strong>2. Pick a room</strong>
+              <span>See who each room sleeps and its exact price.</span>
             </li>
             <li>
-              <strong>3. Make it yours</strong>
-              <span>Confirm a demo booking, then manage your stay.</span>
+              <strong>3. Confirm</strong>
+              <span>Review the total, confirm, then manage your stay.</span>
             </li>
           </ol>
+          <BookLink className="reservation-cta" />
           <p className="demo-note">
-            Sample rates and simulated payments only. VIERCYS is a fictional
-            property; reservations are saved in the local demo database.
+            VIERCYS is a fictional hotel for a classroom demonstration. Prices
+            and payments are simulated.
           </p>
         </section>
         <section id="story" className="intro">

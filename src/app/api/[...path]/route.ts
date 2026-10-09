@@ -548,7 +548,7 @@ export async function handler(
         reply,
         source: aiReply ? "ai-assisted" : "deterministic-demo",
         links: [
-          { label: "Book your stay", href: "/availability" },
+          { label: "Book your stay", href: "/book" },
           { label: "My VIERCYS", href: "/my-stay" },
         ],
       });

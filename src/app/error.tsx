@@ -21,7 +21,7 @@ export default function ErrorPage({ reset }: { reset: () => void }) {
       <Link className="text-link" href="/my-stay">
         Check your reservations ↗
       </Link>
-      <Link className="text-link" href="/availability">
+      <Link className="text-link" href="/book">
         Return to booking search ↗
       </Link>
     </main>

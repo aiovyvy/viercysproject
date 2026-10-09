@@ -15,7 +15,7 @@ export default function NotFound() {
           This page could not be found. Choose a destination or return to your
           stay.
         </p>
-        <Link className="closing-cta" href="/availability">
+        <Link className="closing-cta" href="/book">
           Book your stay ↗
         </Link>
         <Link className="text-link" href="/my-stay">

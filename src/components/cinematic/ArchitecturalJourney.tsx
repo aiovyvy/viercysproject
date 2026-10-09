@@ -180,7 +180,7 @@ export default function ArchitecturalJourney() {
             Essential Rooms, Signature Suites and Grand Sanctuaries. Find the
             room that fits your stay.
           </p>
-          <Link href="/availability" className={styles.action}>
+          <Link href="/book" className={styles.action}>
             View rooms & availability <span aria-hidden="true">↗</span>
           </Link>
         </div>

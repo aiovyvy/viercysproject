@@ -260,7 +260,7 @@ export function Concierge() {
         </section>
       )}
       <div className="journey-links">
-        <a href="/availability">Book your stay</a>
+        <a href="/book">Book your stay</a>
         <a href="/my-stay">My VIERCYS</a>
       </div>
       <details className="j-panel">

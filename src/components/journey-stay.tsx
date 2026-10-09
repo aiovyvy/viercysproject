@@ -3,9 +3,15 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Shell, useData, api, Feedback, GuestLinks } from "./journey";
-import { PriceSummary } from "./journey-checkout";
-import type { Booking } from "@/lib/booking";
-import { formatDate, type SearchInput } from "@/lib/policy";
+import { BookingShell, PriceSummary } from "./booking-flow";
+import type { Booking, Pricing } from "@/lib/booking";
+import {
+  addDays,
+  formatDate,
+  nights,
+  propertyToday,
+  type SearchInput,
+} from "@/lib/policy";
 import { money, type Room } from "@/lib/catalog";
 type StayResponse = {
   booking: Booking;
@@ -50,7 +56,7 @@ export function MyStay() {
             No reservations are accessible in this browser session. Request a
             verified link or book a demo stay.
           </p>
-          <Link className="text-link" href="/availability">
+          <Link className="text-link" href="/book">
             Book your stay ↗
           </Link>
         </div>
@@ -81,6 +87,27 @@ export function MyStay() {
     </Shell>
   );
 }
+const EMAIL_STATUS: Record<string, string> = {
+  "demo-preview":
+    "Email is not configured for this demo, so nothing was sent. You can view the email that would have been sent.",
+  queued: "Your confirmation email is waiting to be sent.",
+  sending: "Your confirmation email is being sent.",
+  accepted:
+    "Your confirmation email was handed to the email provider. Delivery is not yet confirmed.",
+  sent: "Your confirmation email was sent.",
+  delivered: "Your confirmation email was delivered.",
+  delayed: "Email delivery is delayed by the provider.",
+  bounced: "The email bounced. Check the address you entered.",
+  failed: "The email could not be sent. Your booking is still confirmed.",
+};
+type Preview = {
+  pricing: Pricing;
+  currency: string;
+  search: SearchInput;
+  roomIds: string[];
+  label: string;
+};
+type Panel = "" | "extend" | "dates" | "advanced" | "cancel";
 export function Stay({
   reference,
   success = false,
@@ -93,25 +120,29 @@ export function Stay({
   );
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const [cancelOpen, setCancelOpen] = useState(false);
-  const [modifyOpen, setModifyOpen] = useState(false);
+  const [panel, setPanel] = useState<Panel>("");
+  const [extraNights, setExtraNights] = useState(2);
+  const [newArrival, setNewArrival] = useState("");
   const [confirmCancel, setConfirmCancel] = useState(false);
-  const [preview, setPreview] = useState<{
-    pricing: import("@/lib/booking").Pricing;
-    currency: string;
-    search: SearchInput;
-    roomIds: string[];
-  } | null>(null);
+  const [preview, setPreview] = useState<Preview | null>(null);
+  const [notice, setNotice] = useState("");
   const catalog = useData<{ rooms: Room[]; currency: string }>("/api/catalog");
   const booking = result.data?.booking;
-  async function action(path: string, body: unknown) {
+  function open(next: Panel) {
+    setPanel(panel === next ? "" : next);
+    setPreview(null);
+    setError("");
+    setNotice("");
+  }
+  async function action(path: string, body: unknown, done = "") {
     setBusy(true);
     setError("");
     try {
       await api("/api/bookings/" + reference + "/" + path, body);
       setPreview(null);
+      setPanel("");
+      setNotice(done);
       result.refresh();
-      setCancelOpen(false);
     } catch (error) {
       setError(
         error instanceof Error ? error.message : "Could not update your stay.",
@@ -120,201 +151,436 @@ export function Stay({
       setBusy(false);
     }
   }
-  async function change(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const search: SearchInput = {
-      arrival: String(form.get("arrival")),
-      departure: String(form.get("departure")),
-      adults: Number(form.get("adults")),
-      children: Number(form.get("children")),
-      rooms: form.getAll("roomIds").length,
-    };
+  async function previewChange(
+    search: SearchInput,
+    roomIds: string[],
+    label: string,
+  ) {
+    setBusy(true);
+    setError("");
+    setPreview(null);
     try {
-      const quote = await api<{
-        pricing: import("@/lib/booking").Pricing;
-        currency: string;
-      }>("/api/bookings/" + reference + "/modification-quote", {
-        ...search,
-        roomIds: form.getAll("roomIds").map(String),
-      });
-      setPreview({
-        ...quote,
-        search,
-        roomIds: form.getAll("roomIds").map(String),
-      });
-      setError("");
-    } catch (error) {
-      setError(
-        error instanceof Error ? error.message : "Could not preview changes.",
+      const quote = await api<{ pricing: Pricing; currency: string }>(
+        "/api/bookings/" + reference + "/modification-quote",
+        { ...search, roomIds },
       );
+      setPreview({ ...quote, search, roomIds, label });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Could not check those dates.";
+      setError(
+        /unavailable|reserved/i.test(message)
+          ? message +
+              " Try fewer nights or different dates. Your current booking is unchanged."
+          : message,
+      );
+    } finally {
+      setBusy(false);
     }
   }
+  function advanced(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const roomIds = form.getAll("roomIds").map(String);
+    previewChange(
+      {
+        arrival: String(form.get("arrival")),
+        departure: String(form.get("departure")),
+        adults: Number(form.get("adults")),
+        children: Number(form.get("children")),
+        rooms: roomIds.length,
+      },
+      roomIds,
+      "Changed guests or rooms",
+    );
+  }
+  function toggle(name: Panel) {
+    return (event: React.SyntheticEvent<HTMLDetailsElement>) => {
+      if (event.currentTarget.open !== (panel === name)) open(name);
+    };
+  }
+  const stayNights = booking ? nights(booking) : 0;
+  const cancelled = booking?.status === "cancelled";
+  const latestEmail = result.data?.email[0];
+  const voucher = booking?.pricing.voucher;
+  const isDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value);
   return (
-    <Shell
-      title={success ? "Your sanctuary awaits." : "Your stay, considered."}
+    <BookingShell
+      step={success ? 3 : -1}
+      title={
+        cancelled
+          ? "Reservation cancelled."
+          : success
+            ? "You're booked."
+            : "Your stay."
+      }
+      back={success ? undefined : { href: "/my-stay", label: "My VIERCYS" }}
     >
-      <Feedback error={result.error || error} loading={result.loading} />
+      <Feedback error={result.error} loading={result.loading} />
       {booking && (
-        <>
-          <p className="lead">
-            {success
-              ? `Thank you, ${booking.name}. Your demo reservation has been saved.`
-              : `Welcome back, ${booking.name}.`}
-          </p>
-          <p className="j-status">
-            {booking.status} · {booking.payment_status} ·{" "}
-            {booking.checkin_status}
-          </p>
-          <h2>Booking reference: {booking.reference}</h2>
-          <p>
-            VIERCYS Santorini, Greece
-            <br />
-            {formatDate(booking.arrival)} – {formatDate(booking.departure)}
-            <br />
-            {booking.adults} adults · {booking.children} children ·{" "}
-            {booking.rooms} rooms
-          </p>
-          <p>
-            {booking.email}
-            {booking.phone ? " · " + booking.phone : ""}
-          </p>
-          <GuestLinks reference={reference} />
-          <h2>What happens next?</h2>
-          <p>
-            Your stay is saved in the local demo database and visible to staff.
-            Review your details, prepare your editable itinerary, and use the
-            concierge for suggestions. No real money or accommodation has been
-            booked.
-          </p>
-          <div className="j-alert">
-            <h3>Confirmation email</h3>
-            {result.data?.email.map((event, index) => (
-              <p key={index}>
-                {event.kind}:{" "}
-                <strong>
-                  {event.status === "demo-preview"
-                    ? "Demo preview — no email sent"
-                    : event.status === "accepted"
-                      ? "Accepted by email provider — delivery not verified"
-                      : event.status}
-                </strong>
-                {event.error ? " · " + event.error : ""}
-              </p>
-            ))}
-            <Link
-              className="j-link"
-              href={`/booking/${reference}/email-preview`}
-            >
-              View the branded email
-            </Link>
-            <button
-              className="j-button secondary"
-              type="button"
-              disabled={busy}
-              onClick={() => action("email-retry", {})}
-            >
-              Retry pending / failed email
-            </button>
-          </div>
-          <PriceSummary pricing={booking.pricing} currency={booking.currency} />
-          <h2>Your room allocation</h2>
-          <ul>
-            {booking.allocations.map((slot) => (
-              <li key={slot.room_id}>
-                Room {slot.room_id.replace("S-", "")} · {slot.adults} adults ·{" "}
-                {slot.children} children
-              </li>
-            ))}
-          </ul>
-          {booking.requests && (
-            <p>Special request, subject to approval: {booking.requests}</p>
+        <div className="stay">
+          <section
+            className={cancelled ? "stay-banner cancelled" : "stay-banner"}
+            aria-label="Booking reference"
+          >
+            <p>
+              {cancelled
+                ? "This reservation was cancelled and its rooms released. A simulated refund was recorded."
+                : success
+                  ? `Thank you, ${booking.name}. Your demo reservation is confirmed.`
+                  : `Welcome back, ${booking.name}.`}
+            </p>
+            <p className="stay-ref-label">Booking reference</p>
+            <p className="stay-ref">{booking.reference}</p>
+            <p className="stay-status">
+              {cancelled ? "Cancelled" : "Confirmed"} · Simulated payment, no
+              real charge
+              {booking.checkin_status === "checked-in" && " · Checked in"}
+              {booking.checkin_status === "checked-out" && " · Checked out"}
+            </p>
+          </section>
+          {notice && (
+            <p className="book-voucher" role="status">
+              {notice}
+            </p>
           )}
-          <p className="j-note">
-            Online cancellation until two calendar days before arrival, with a
-            full simulated refund. Date changes recheck inventory and
-            recalculate the demo total. Dinner, sailing and spa are approval
-            requests, not confirmed activities.
-          </p>
-          {booking.status === "confirmed" && (
-            <>
-              <div className="j-actions">
+          <section className="book-card" aria-labelledby="stay-summary">
+            <h2 id="stay-summary">VIERCYS Santorini</h2>
+            <dl className="book-stay">
+              <div>
+                <dt>Dates</dt>
+                <dd>
+                  {formatDate(booking.arrival)} –{" "}
+                  {formatDate(booking.departure)} · {stayNights} night
+                  {stayNights === 1 ? "" : "s"}
+                </dd>
+              </div>
+              <div>
+                <dt>Room{booking.pricing.rooms.length > 1 ? "s" : ""}</dt>
+                <dd>
+                  {booking.pricing.rooms
+                    .map((room) => `${room.name} (no. ${room.number})`)
+                    .join(", ")}
+                </dd>
+              </div>
+              <div>
+                <dt>Guests</dt>
+                <dd>
+                  {booking.adults} adult{booking.adults === 1 ? "" : "s"}
+                  {booking.children
+                    ? `, ${booking.children} child${booking.children === 1 ? "" : "ren"}`
+                    : ""}
+                </dd>
+              </div>
+              <div>
+                <dt>Lead guest</dt>
+                <dd>
+                  {booking.name} · {booking.email}
+                  {booking.phone ? " · " + booking.phone : ""}
+                </dd>
+              </div>
+              {booking.requests && (
+                <div>
+                  <dt>Special request (subject to approval)</dt>
+                  <dd>{booking.requests}</dd>
+                </div>
+              )}
+            </dl>
+            {voucher && (
+              <p className="stay-savings">
+                Voucher savings {money(voucher.discount, booking.currency)} ·
+                Simulated balance{" "}
+                {money(booking.pricing.total, booking.currency)}
+              </p>
+            )}
+          </section>
+          {!cancelled && (
+            <nav className="stay-actions" aria-label="Manage your stay">
+              <button
+                type="button"
+                className="book-button primary"
+                aria-expanded={panel === "extend"}
+                onClick={() => open("extend")}
+              >
+                Extend stay
+              </button>
+              <button
+                type="button"
+                className="book-button"
+                aria-expanded={panel === "dates"}
+                onClick={() => {
+                  setNewArrival(booking.arrival);
+                  open("dates");
+                }}
+              >
+                Change dates
+              </button>
+              <Link
+                className="book-button"
+                href={`/booking/${reference}/receipt`}
+              >
+                Print receipt
+              </Link>
+              <Link className="book-button" href="/">
+                Back to home
+              </Link>
+            </nav>
+          )}
+          {panel === "extend" && !cancelled && (
+            <section className="book-card" aria-labelledby="extend-heading">
+              <h2 id="extend-heading">Extend your stay</h2>
+              <p className="book-help">
+                Add nights after {formatDate(booking.departure)}. You keep the
+                same room{booking.rooms > 1 ? "s" : ""}; extra nights are
+                charged at the room rate.
+              </p>
+              <div className="stay-extend">
+                <span>Extra nights</span>
+                <div className="book-counter-controls">
+                  <button
+                    type="button"
+                    aria-label="Remove one night"
+                    disabled={extraNights <= 1}
+                    onClick={() => {
+                      setExtraNights(extraNights - 1);
+                      setPreview(null);
+                    }}
+                  >
+                    −
+                  </button>
+                  <output aria-live="polite">{extraNights}</output>
+                  <button
+                    type="button"
+                    aria-label="Add one night"
+                    disabled={stayNights + extraNights >= 30}
+                    onClick={() => {
+                      setExtraNights(extraNights + 1);
+                      setPreview(null);
+                    }}
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+              <p className="book-help">
+                New check-out:{" "}
+                {formatDate(addDays(booking.departure, extraNights))} ·{" "}
+                {stayNights + extraNights} nights in total
+              </p>
+              <button
+                type="button"
+                className="book-button primary"
+                disabled={busy}
+                onClick={() =>
+                  previewChange(
+                    {
+                      arrival: booking.arrival,
+                      departure: addDays(booking.departure, extraNights),
+                      adults: booking.adults,
+                      children: booking.children,
+                      rooms: booking.rooms,
+                    },
+                    booking.roomIds,
+                    `Extended by ${extraNights} night${extraNights === 1 ? "" : "s"}`,
+                  )
+                }
+              >
+                {busy ? "Checking…" : "Check price and availability"}
+              </button>
+            </section>
+          )}
+          {panel === "dates" && !cancelled && (
+            <section className="book-card" aria-labelledby="dates-heading">
+              <h2 id="dates-heading">Change dates</h2>
+              <p className="book-help">
+                Move your {stayNights}-night stay. We check that your room is
+                free on the new dates before anything changes.
+              </p>
+              <div className="book-field">
+                <label htmlFor="stay-arrival">New check-in</label>
+                <input
+                  id="stay-arrival"
+                  type="date"
+                  min={propertyToday()}
+                  value={newArrival}
+                  onChange={(e) => {
+                    setNewArrival(e.target.value);
+                    setPreview(null);
+                  }}
+                />
+              </div>
+              {isDate(newArrival) && (
+                <p className="book-help">
+                  New check-out: {formatDate(addDays(newArrival, stayNights))}
+                </p>
+              )}
+              <button
+                type="button"
+                className="book-button primary"
+                disabled={busy || !isDate(newArrival)}
+                onClick={() =>
+                  previewChange(
+                    {
+                      arrival: newArrival,
+                      departure: addDays(newArrival, stayNights),
+                      adults: booking.adults,
+                      children: booking.children,
+                      rooms: booking.rooms,
+                    },
+                    booking.roomIds,
+                    "New dates",
+                  )
+                }
+              >
+                {busy ? "Checking…" : "Check price and availability"}
+              </button>
+            </section>
+          )}
+          {error && (
+            <div className="book-error" role="alert">
+              <p>{error}</p>
+            </div>
+          )}
+          {preview && (
+            <section
+              className="book-card stay-preview"
+              aria-labelledby="preview-heading"
+            >
+              <h2 id="preview-heading">Review the change</h2>
+              <p>
+                {preview.label}: {formatDate(preview.search.arrival)} –{" "}
+                {formatDate(preview.search.departure)}. Nothing has changed yet.
+              </p>
+              <PriceSummary
+                pricing={preview.pricing}
+                currency={preview.currency}
+                title="New price"
+              />
+              <p className="stay-difference">
+                {preview.pricing.total >= booking.pricing.total
+                  ? `Additional simulated amount: ${money(preview.pricing.total - booking.pricing.total, preview.currency)}`
+                  : `Simulated refund: ${money(booking.pricing.total - preview.pricing.total, preview.currency)}`}
+              </p>
+              <div className="stay-actions">
                 <button
-                  className="j-button secondary"
                   type="button"
-                  onClick={() => setModifyOpen(!modifyOpen)}
-                >
-                  Modify dates, guests or rooms
-                </button>
-                <button
-                  className="j-button secondary"
-                  type="button"
-                  onClick={() => setCancelOpen(!cancelOpen)}
-                >
-                  Cancel reservation
-                </button>
-                <button
-                  className="j-button secondary"
-                  type="button"
+                  className="book-button primary"
                   disabled={busy}
-                  onClick={() => action("check-in", {})}
+                  onClick={() =>
+                    action(
+                      "modify",
+                      { ...preview.search, roomIds: preview.roomIds },
+                      "Your stay has been updated and an updated confirmation recorded.",
+                    )
+                  }
                 >
-                  Demo digital check-in
+                  Confirm change
+                </button>
+                <button
+                  type="button"
+                  className="book-button"
+                  onClick={() => setPreview(null)}
+                >
+                  Keep current booking
                 </button>
               </div>
-              {modifyOpen && (
-                <form
-                  className="j-panel"
-                  onSubmit={change}
-                  onChange={() => setPreview(null)}
-                >
-                  <h2>Modify your stay</h2>
-                  <p>
-                    Select 1–5 rooms. Availability and capacity are rechecked
-                    for your new dates before you confirm. No change is saved by
-                    the preview.
+            </section>
+          )}
+          <PriceSummary pricing={booking.pricing} currency={booking.currency} />
+          <section className="book-card" aria-labelledby="email-heading">
+            <h2 id="email-heading">Confirmation email</h2>
+            <p>
+              {latestEmail
+                ? EMAIL_STATUS[latestEmail.status] || latestEmail.status
+                : "No email recorded."}
+            </p>
+            <p className="book-change-links">
+              <Link href={`/booking/${reference}/email-preview`}>
+                View the email
+              </Link>
+              {latestEmail &&
+                ["failed", "queued"].includes(latestEmail.status) && (
+                  <button
+                    type="button"
+                    className="book-text-button"
+                    disabled={busy}
+                    onClick={() => action("email-retry", {})}
+                  >
+                    Try sending again
+                  </button>
+                )}
+            </p>
+          </section>
+          <section className="book-card" aria-labelledby="more-heading">
+            <h2 id="more-heading">More for your stay</h2>
+            <p className="book-change-links">
+              <Link href={`/itinerary/${reference}`}>Plan your visit</Link>
+              <Link href="/concierge">Ask the concierge</Link>
+              <Link href="/my-stay">All my bookings</Link>
+            </p>
+          </section>
+          {booking.status === "confirmed" && (
+            <>
+              <details
+                className="book-card"
+                open={panel === "advanced"}
+                onToggle={toggle("advanced")}
+              >
+                <summary className="stay-summary-toggle">
+                  Change guests or rooms
+                </summary>
+                <form onSubmit={advanced} onChange={() => setPreview(null)}>
+                  <p className="book-help">
+                    Pick the rooms for your revised stay. Availability and
+                    capacity are rechecked before anything is saved.
                   </p>
-                  <fieldset>
-                    <legend>Physical rooms for your revised stay</legend>
-                    {catalog.data?.rooms.map((room) => (
-                      <label className="j-check" key={room.id}>
-                        <input
-                          type="checkbox"
-                          name="roomIds"
-                          value={room.id}
-                          defaultChecked={booking.roomIds.includes(room.id)}
-                        />
-                        Room {room.number} · {room.category} · up to{" "}
-                        {room.capacity} guests ·{" "}
-                        {money(room.rate, booking.currency)} / night
-                        {room.operational === "maintenance"
-                          ? " · maintenance"
-                          : ""}
-                      </label>
-                    ))}
+                  <fieldset className="stay-rooms">
+                    <legend>Rooms</legend>
+                    {catalog.data?.rooms
+                      .filter((room) => room.operational !== "maintenance")
+                      .map((room) => (
+                        <label className="book-check" key={room.id}>
+                          <input
+                            type="checkbox"
+                            name="roomIds"
+                            value={room.id}
+                            defaultChecked={booking.roomIds.includes(room.id)}
+                          />
+                          <span>
+                            Room {room.number} ·{" "}
+                            {room.category[0].toUpperCase() +
+                              room.category.slice(1)}{" "}
+                            · sleeps {room.capacity} ·{" "}
+                            {money(room.rate, booking.currency)} per night
+                          </span>
+                        </label>
+                      ))}
                   </fieldset>
-                  <div className="j-fields">
-                    <label>
-                      New check-in
+                  <div className="book-date-row">
+                    <div className="book-field">
+                      <label htmlFor="adv-arrival">Check-in</label>
                       <input
+                        id="adv-arrival"
                         type="date"
                         name="arrival"
                         defaultValue={booking.arrival}
                         required
                       />
-                    </label>
-                    <label>
-                      New check-out
+                    </div>
+                    <div className="book-field">
+                      <label htmlFor="adv-departure">Check-out</label>
                       <input
+                        id="adv-departure"
                         type="date"
                         name="departure"
                         defaultValue={booking.departure}
                         required
                       />
-                    </label>
-                    <label>
-                      New adults
+                    </div>
+                    <div className="book-field">
+                      <label htmlFor="adv-adults">Adults</label>
                       <input
+                        id="adv-adults"
                         type="number"
                         name="adults"
                         min="1"
@@ -322,10 +588,11 @@ export function Stay({
                         defaultValue={booking.adults}
                         required
                       />
-                    </label>
-                    <label>
-                      New children
+                    </div>
+                    <div className="book-field">
+                      <label htmlFor="adv-children">Children</label>
                       <input
+                        id="adv-children"
                         type="number"
                         name="children"
                         min="0"
@@ -333,79 +600,71 @@ export function Stay({
                         defaultValue={booking.children}
                         required
                       />
-                    </label>
+                    </div>
                   </div>
-                  <p>
-                    Repricing uses the displayed room rates and existing
-                    confirmed demo extras; approval requests remain excluded.
-                    Changes replace the previous dates only after a successful
-                    availability check.
-                  </p>
-                  <label className="j-check">
-                    <input type="checkbox" required />I accept repricing and the
-                    displayed modification terms.
-                  </label>
-                  <button className="j-button" disabled={busy} type="submit">
-                    Preview new availability and total
+                  <button
+                    className="book-button primary"
+                    disabled={busy}
+                    type="submit"
+                  >
+                    Check price and availability
                   </button>
                 </form>
-              )}
-              {cancelOpen && (
-                <section className="j-panel">
-                  <h2>Confirm cancellation</h2>
-                  <p>
-                    This releases your rooms and records a simulated refund. You
-                    can book again if availability permits.
-                  </p>
-                  <label className="j-check">
-                    <input
-                      type="checkbox"
-                      checked={confirmCancel}
-                      onChange={(e) => setConfirmCancel(e.target.checked)}
-                    />
-                    I confirm cancellation of {reference}.
-                  </label>
+              </details>
+              <details
+                className="book-card"
+                open={panel === "cancel"}
+                onToggle={toggle("cancel")}
+              >
+                <summary className="stay-summary-toggle">
+                  Cancel reservation
+                </summary>
+                <p className="book-help">
+                  Online cancellation is available until two days before
+                  arrival. It releases your room and records a simulated refund
+                  {voucher ? ", and your voucher can be used again" : ""}.
+                </p>
+                <label className="book-check">
+                  <input
+                    type="checkbox"
+                    checked={confirmCancel}
+                    onChange={(e) => setConfirmCancel(e.target.checked)}
+                  />
+                  <span>I want to cancel {reference}.</span>
+                </label>
+                <button
+                  className="book-button"
+                  disabled={!confirmCancel || busy}
+                  type="button"
+                  onClick={() =>
+                    action(
+                      "cancel",
+                      { confirm: true },
+                      "Your reservation has been cancelled.",
+                    )
+                  }
+                >
+                  Confirm cancellation
+                </button>
+              </details>
+              {booking.arrival === propertyToday() &&
+                booking.checkin_status === "not-arrived" && (
                   <button
-                    className="j-button"
-                    disabled={!confirmCancel || busy}
+                    className="book-button"
                     type="button"
-                    onClick={() => action("cancel", { confirm: true })}
+                    disabled={busy}
+                    onClick={() =>
+                      action("check-in", {}, "You are pre-checked in (demo).")
+                    }
                   >
-                    Confirm cancellation
+                    Demo digital check-in
                   </button>
-                </section>
-              )}
+                )}
             </>
           )}
-          {preview && (
-            <section className="j-panel">
-              <h2>Review your proposed change</h2>
-              <p>
-                {formatDate(preview.search.arrival)} –{" "}
-                {formatDate(preview.search.departure)}. Nothing has changed yet.
-              </p>
-              <PriceSummary
-                pricing={preview.pricing}
-                currency={preview.currency}
-              />
-              <button
-                type="button"
-                className="j-button"
-                disabled={busy}
-                onClick={() =>
-                  action("modify", {
-                    ...preview.search,
-                    roomIds: preview.roomIds,
-                  })
-                }
-              >
-                Confirm reservation changes
-              </button>
-            </section>
-          )}
-        </>
+        </div>
       )}
-    </Shell>
+    </BookingShell>
   );
 }
 export function Lookup({ token }: { token?: string }) {
