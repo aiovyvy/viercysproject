@@ -40,10 +40,33 @@ import { CATEGORIES, EXTRAS, CURRENCY, money } from "@/lib/catalog";
 import { searchFrom, propertyToday, nights, VOUCHER } from "@/lib/policy";
 import { sendEmails, requestLookup, emailHtml, manageLink } from "@/lib/email";
 export const runtime = "nodejs";
-function setCookie(response: NextResponse, name: string, value: string) {
+// The origin the browser actually used. Behind `next start` request.url
+// reports localhost even when a phone connects by LAN IP, so use Host.
+function requestOrigin(request: NextRequest) {
+  const proto =
+    request.headers.get("x-forwarded-proto")?.split(",")[0].trim() ||
+    request.nextUrl.protocol.replace(":", "");
+  const host =
+    request.headers.get("x-forwarded-host") || request.headers.get("host");
+  return host ? `${proto}://${host}` : new URL(request.url).origin;
+}
+// Secure cookies are dropped by browsers on plain-http LAN origins, which is
+// how classroom phones reach a local demo; mark them Secure when on HTTPS.
+function secureCookies(request: NextRequest) {
+  return (
+    requestOrigin(request).startsWith("https:") ||
+    (process.env.APP_URL || "").startsWith("https:")
+  );
+}
+function setCookie(
+  request: NextRequest,
+  response: NextResponse,
+  name: string,
+  value: string,
+) {
   response.cookies.set(name, value, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: secureCookies(request),
     sameSite: "lax",
     maxAge: 14 * 86400,
     path: "/",
@@ -70,7 +93,11 @@ export async function handler(
   try {
     if (request.method !== "GET") {
       const origin = request.headers.get("origin");
-      if (origin && origin !== new URL(request.url).origin)
+      if (
+        origin &&
+        origin !== requestOrigin(request) &&
+        origin !== process.env.APP_URL?.replace(/\/$/, "")
+      )
         return NextResponse.json(
           { error: "Cross-site requests are not allowed." },
           { status: 403 },
@@ -141,7 +168,7 @@ export async function handler(
       const response = NextResponse.json(voucherStatus(claimed));
       response.cookies.set(INVITE_COOKIE, String(body.token), {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
+        secure: secureCookies(request),
         sameSite: "lax",
         expires: new Date(claimed.invite!.expires_at),
         path: "/",
@@ -209,6 +236,7 @@ export async function handler(
       });
       if (booking.invite_id) response.cookies.delete(INVITE_COOKIE);
       setCookie(
+        request,
         response,
         "viercys_guest",
         createSession("guest", booking.reference),
@@ -496,6 +524,7 @@ export async function handler(
         throw new Error("This access link was already used.");
       const response = NextResponse.json({ verified: true });
       setCookie(
+        request,
         response,
         "viercys_guest",
         createSession(
@@ -574,6 +603,7 @@ export async function handler(
         );
       const response = NextResponse.json({ ok: true, role });
       setCookie(
+        request,
         response,
         "viercys_staff",
         createSession("admin", String(body.username), true, role),
@@ -628,7 +658,7 @@ export async function handler(
               { error: "Manager access required." },
               { status: 403 },
             );
-          const origin = process.env.APP_URL || new URL(request.url).origin;
+          const origin = process.env.APP_URL || requestOrigin(request);
           const created = createInvites(Number(body.count || 1), {
             label: body.label,
             days: body.days === undefined ? undefined : Number(body.days),

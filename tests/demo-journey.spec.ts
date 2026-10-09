@@ -183,3 +183,46 @@ test("unknown invitation links explain the problem and offer a way forward", asy
     ).status(),
   ).toBe(400);
 });
+
+test("works when phones reach the laptop by IP over plain http", async ({
+  browser,
+}) => {
+  // Phones in class open http://<laptop-ip>:<port>. The server must accept
+  // that Origin, keep cookies, and the page must not rely on APIs that only
+  // exist in secure contexts (crypto.randomUUID).
+  const staff = await browser.newContext();
+  const [invite] = await staffInvites(staff.request);
+  await staff.close();
+  const phone = await browser.newContext({ ...devices["iPhone 13"] });
+  const page = await phone.newPage();
+  await page.addInitScript(() => {
+    // @ts-expect-error simulating an insecure context
+    delete Crypto.prototype.randomUUID;
+    window.localStorage.setItem("viercys-booking-guide-v1", "done");
+  });
+  const ipBase = "http://127.0.0.1:3100";
+  await page.goto(ipBase + new URL(invite.url).pathname);
+  await page.getByRole("button", { name: "Claim your stay" }).click();
+  await expect(page).toHaveURL(ipBase + "/book");
+  await expect(page.getByText("Demo voucher applied.")).toBeVisible();
+  await page.getByRole("button", { name: "See available rooms" }).click();
+  await page.getByRole("button", { name: "Select Essential Room" }).click();
+  await expect(page.locator(".book-price-total")).toContainText("€0.00");
+  await page.getByLabel("Full name").fill("Network Student");
+  await page.getByLabel("Email address").fill("network@example.test");
+  await page.getByRole("checkbox", { name: /simulated booking/ }).check();
+  await page.getByRole("button", { name: "Confirm demo reservation" }).click();
+  await expect(
+    page.getByRole("heading", { name: "You're booked." }),
+  ).toBeVisible();
+  // A genuinely foreign origin is still refused.
+  expect(
+    (
+      await page.request.post(ipBase + "/api/invite/claim", {
+        headers: { Origin: "https://evil.example" },
+        data: { token: "x" },
+      })
+    ).status(),
+  ).toBe(403);
+  await phone.close();
+});

@@ -1,6 +1,6 @@
 import { DatabaseSync } from "node:sqlite";
-import { readFileSync, mkdirSync, existsSync, writeFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
+import { basename, dirname, resolve } from "node:path";
 import {
   randomBytes,
   scryptSync,
@@ -61,7 +61,9 @@ export function db() {
         .all()
         .some((row) => row.name === column)
     )
-      connection.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+      connection.exec(
+        `ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`,
+      );
   };
   addColumn("email_attempts", "claimed_at", "INTEGER NOT NULL DEFAULT 0");
   addColumn("bookings", "invite_id", "TEXT REFERENCES invites(id)");
@@ -75,21 +77,27 @@ export function db() {
   ) {
     const generated = randomBytes(18).toString("base64url");
     seedStaff("manager", generated, "manager");
-    const credentials = resolve(dirname(path), "demo-staff.json");
-    if (!existsSync(credentials))
-      writeFileSync(
-        credentials,
-        JSON.stringify(
-          {
-            username: "manager",
-            password: generated,
-            note: "Local demo only; keep private. Production requires VIERCYS_ADMIN_PASSWORD (12+ chars).",
-          },
-          null,
-          2,
-        ),
-        { mode: 0o600 },
-      );
+    // A fresh database always gets a fresh password, so the file is rewritten
+    // on every generation; otherwise a reset left a stale, unusable password.
+    // Non-default databases get their own file so they never clobber it.
+    const base = basename(path).replace(/\.sqlite$/, "");
+    const credentials = resolve(
+      dirname(path),
+      base === "viercys" ? "demo-staff.json" : `${base}-staff.json`,
+    );
+    writeFileSync(
+      credentials,
+      JSON.stringify(
+        {
+          username: "manager",
+          password: generated,
+          note: "Local demo only; keep private. Production requires VIERCYS_ADMIN_PASSWORD (12+ chars).",
+        },
+        null,
+        2,
+      ),
+      { mode: 0o600 },
+    );
   }
   return connection;
 }

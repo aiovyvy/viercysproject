@@ -717,7 +717,11 @@ export function DetailsStep({
     try {
       key = window.sessionStorage.getItem(storageKey) || "";
     } catch {}
-    key ||= crypto.randomUUID();
+    // crypto.randomUUID needs a secure context; classroom phones reach the
+    // demo over plain http on the LAN, where only getRandomValues exists.
+    key ||= Array.from(crypto.getRandomValues(new Uint8Array(16)), (byte) =>
+      byte.toString(16).padStart(2, "0"),
+    ).join("");
     try {
       window.sessionStorage.setItem(storageKey, key);
     } catch {}

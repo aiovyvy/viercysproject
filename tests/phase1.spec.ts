@@ -183,11 +183,12 @@ test("calendar, guide and suite tabs work from the keyboard", async ({
     document.activeElement?.getAttribute("aria-label"),
   );
   await page.keyboard.press("ArrowRight");
-  expect(
-    await page.evaluate(() =>
-      document.activeElement?.getAttribute("aria-label"),
-    ),
-  ).not.toBe(before);
+  // Focus moves on the next animation frame, after the month re-renders.
+  await expect
+    .poll(() =>
+      page.evaluate(() => document.activeElement?.getAttribute("aria-label")),
+    )
+    .not.toBe(before);
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).not.toBeVisible();
 
