@@ -2,6 +2,11 @@
 
 Updated **9 October 2026 (Asia/Manila)**. Both complete briefs were read before implementation; the corrective directive takes priority. Working Phase 1 photography, palette, typography and navigation were retained. This is a fictional resort with genuine persistent demo reservations and simulated payment, not a live hotel.
 
+## Required deliverables
+
+- [DEMO_RUNBOOK.md](./DEMO_RUNBOOK.md): quick classroom demo flow, reset steps, fallback path, and admin verification notes.
+- [UX_AUDIT.md](./UX_AUDIT.md): before/after UX issues and the specific routes/components that changed.
+
 ## Latest verified milestone
 
 - [x] `npm run lint`: passed, zero errors/warnings.
