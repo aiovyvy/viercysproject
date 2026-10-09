@@ -59,6 +59,8 @@ export function Navigation() {
   const [open, setOpen] = useState(false);
   const path = usePathname();
   const inFlow = path.startsWith("/book") || path.startsWith("/invite");
+  // Room pages show their own room-specific booking dock on phones.
+  const roomPage = path.startsWith("/rooms/");
   const header = useRef<HTMLElement>(null);
   const toggle = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -119,7 +121,7 @@ export function Navigation() {
           {open ? "Close" : "Menu"}
         </button>
       </header>
-      {!inFlow && (
+      {!inFlow && !roomPage && (
         <nav aria-label="Quick booking">
           <BookLink className="mobile-book-action" />
         </nav>

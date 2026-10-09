@@ -102,4 +102,21 @@ All images are temporary stock/editorial inspiration, not actual VIERCYS propert
 | public/images/amalfi.jpg | Sylvain Perona: https://unsplash.com/photos/N32Di3LG-t0 |
 | public/images/bali.jpg | https://images.unsplash.com/photo-1537996194471-e657df975ab4 |
 
+Room pages and booking room cards use `public/images/santorini/` (Openverse / Wikimedia Commons). CC BY images must keep their credit, which the room-page lightbox shows on every photo:
+
+| Local file | Creator | License | Source |
+| --- | --- | --- | --- |
+| santorini/oia-sunset.jpg | kuhnmi | CC BY 2.0 | https://commons.wikimedia.org/wiki/File:Sunset_in_Oia1.jpg |
+| santorini/oia-evening.jpg | kuhnmi | CC BY 2.0 | https://commons.wikimedia.org/wiki/File:Sunset_in_Santorini1.jpg |
+| santorini/white-stair.jpg | Klearchos Kapoutsis | CC BY 2.0 | https://commons.wikimedia.org/wiki/File:Is_it_waiting_us%3F_(2790256647).jpg |
+| santorini/parasols.jpg | Klearchos Kapoutsis | CC BY 2.0 | https://commons.wikimedia.org/wiki/File:Parasols_(2784723537).jpg |
+| santorini/stone-door.jpg | Klearchos Kapoutsis | CC BY 2.0 | https://commons.wikimedia.org/wiki/File:Old_Door_(4346766078).jpg |
+| santorini/caldera-table.jpg | Klearchos Kapoutsis | CC BY 2.0 | https://commons.wikimedia.org/wiki/File:A_table,_two_chairs_and_an_umbrella..._(2260966802).jpg |
+| santorini/courtyard-door.jpg (cropped) | Winniepix | CC BY 2.0 | https://commons.wikimedia.org/wiki/File:Traditional_houses_beneath_the_churches_in_Firostefani,_Santorini,_Greece_(34473665406).jpg |
+| santorini/caldera-dusk.jpg | Sgroey | CC BY 4.0 | https://commons.wikimedia.org/wiki/File:View_of_Caldera_at_Sunset_from_Imerovigli,_Santorini.jpg |
+| santorini/sea-terrace.jpg | rawpixel | CC0 | https://www.rawpixel.com/image/5924623 |
+| santorini/caldera-pool.jpg | rawpixel | CC0 | https://www.rawpixel.com/image/5963329 |
+| santorini/cliff-pools.jpg | rawpixel | CC0 | https://www.rawpixel.com/image/6054528 |
+| santorini/chapel-arch.jpg | rawpixel | CC0 | https://www.rawpixel.com/image/6036805 |
+
 Review the Unsplash license (https://unsplash.com/license) and replacement rights. The pre-existing Microsoft.Services.Store.winmd is preserved.

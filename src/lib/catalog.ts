@@ -16,7 +16,7 @@ export const CATEGORIES = [
       "Air conditioning",
       "Courtyard terrace",
     ],
-    photo: "/images/suite.jpg",
+    photo: "/images/santorini/courtyard-door.jpg",
   },
   {
     id: "signature",
@@ -36,7 +36,7 @@ export const CATEGORIES = [
       "Wi-Fi",
       "Air conditioning",
     ],
-    photo: "/images/architecture.jpg",
+    photo: "/images/santorini/parasols.jpg",
   },
   {
     id: "grand",
@@ -58,7 +58,7 @@ export const CATEGORIES = [
       "Wi-Fi",
       "Air conditioning",
     ],
-    photo: "/images/santorini.jpg",
+    photo: "/images/santorini/oia-sunset.jpg",
   },
 ] as const;
 export const EXTRAS = [

@@ -126,6 +126,8 @@ test("no sideways scrolling at 320px and 44px tap targets on key pages", async (
     "/my-stay",
     "/lookup",
     "/concierge",
+    "/rooms/essential",
+    "/rooms/grand",
     ...INFO,
   ]) {
     await page.goto(path);
