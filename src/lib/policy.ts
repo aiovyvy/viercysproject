@@ -91,6 +91,8 @@ export function searchQuery(input: SearchInput) {
   ).toString();
 }
 export function formatDate(iso: string) {
+  // Invalid input (e.g. a hand-edited URL) is shown as typed, never thrown.
+  if (!Number.isFinite(dayNumber(iso))) return String(iso);
   return new Intl.DateTimeFormat("en", {
     day: "numeric",
     month: "short",

@@ -18,7 +18,7 @@ const {
   authorize,
   emailStatuses,
 } = await import("../src/lib/booking");
-const { validateSearch, propertyToday, addDays, dayNumber } =
+const { validateSearch, propertyToday, addDays, dayNumber, formatDate } =
   await import("../src/lib/policy");
 const { sendEmails, emailHtml } = await import("../src/lib/email");
 const { createInvites, findInvite, listInvites } =
@@ -51,6 +51,7 @@ test("strict dates, leap days, years, bounds and property calendar", () => {
   ])
     assert.ok(validateSearch({ ...input, arrival, departure }, "2026-10-09"));
   assert.ok(Number.isFinite(dayNumber("2028-02-29")));
+  assert.equal(formatDate("222222-01-01"), "222222-01-01");
   assert.equal(
     validateSearch(
       { ...input, arrival: "2028-02-28", departure: "2028-03-02" },

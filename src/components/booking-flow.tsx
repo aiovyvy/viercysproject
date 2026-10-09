@@ -220,6 +220,7 @@ export function BookingShell({
 
 function Counter({
   label,
+  noun = label.toLowerCase().replace(/s$/, ""),
   hint,
   value,
   min,
@@ -228,6 +229,8 @@ function Counter({
   onChange,
 }: {
   label: string;
+  /** Singular used in "Add one …" button names. */
+  noun?: string;
   hint?: string;
   value: number;
   min: number;
@@ -235,7 +238,6 @@ function Counter({
   name: string;
   onChange: (value: number) => void;
 }) {
-  const noun = label.toLowerCase().replace(/s$/, "");
   return (
     <div className="book-counter" role="group" aria-label={label}>
       <div>
@@ -396,6 +398,7 @@ export function DatesStep({ initial }: { initial: SearchInput }) {
         />
         <Counter
           label="Children"
+          noun="child"
           hint="Age 0–12 · count toward room capacity"
           name="children"
           value={children}

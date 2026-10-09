@@ -44,33 +44,67 @@ test("architectural journey scrubs forward and reverses without hiding booking",
   ).toBe(true);
   expect(errors).toEqual([]);
 });
-test("mobile and reduced motion preserve vertical photographic narrative without WebGL", async ({
+test("phone scrubs the layered arch passage without WebGL", async ({
   browser,
 }) => {
-  for (const settings of [
-    { viewport: { width: 390, height: 844 } },
-    {
-      viewport: { width: 1440, height: 1000 },
-      reducedMotion: "reduce" as const,
-    },
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    hasTouch: true,
+    isMobile: true,
+  });
+  const page = await context.newPage();
+  await page.goto("/");
+  const journey = page.locator('[data-cinematic="architectural-journey"]');
+  await expect(journey).toHaveAttribute("data-render-mode", "2d");
+  await expect(journey.locator("canvas")).toHaveCount(0);
+  const top = await journey.evaluate(
+    (el) => el.getBoundingClientRect().top + window.scrollY,
+  );
+  await page.evaluate(
+    (y) => window.scrollTo({ top: y, behavior: "instant" }),
+    top + 700,
+  );
+  await expect
+    .poll(async () =>
+      Number(await journey.getAttribute("data-scroll-progress")),
+    )
+    .toBeGreaterThan(0.3);
+  await page.evaluate(
+    (y) => window.scrollTo({ top: y, behavior: "instant" }),
+    top + 1700,
+  );
+  await expect(
+    journey.getByRole("link", { name: "View rooms & availability" }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+  await context.close();
+});
+test("reduced motion keeps a static narrative with no pinning or WebGL", async ({
+  browser,
+}) => {
+  for (const viewport of [
+    { width: 390, height: 844 },
+    { width: 1440, height: 1000 },
   ]) {
-    const context = await browser.newContext(settings);
+    const context = await browser.newContext({
+      viewport,
+      reducedMotion: "reduce",
+    });
     const page = await context.newPage();
     await page.goto("/");
     const journey = page.locator('[data-cinematic="architectural-journey"]');
     await expect(journey).toHaveAttribute("data-render-mode", "2d");
     await expect(journey.locator("canvas")).toHaveCount(0);
-    await journey
-      .getByRole("link", { name: "View rooms & availability" })
-      .scrollIntoViewIfNeeded();
-    await expect(
-      journey.getByRole("link", { name: "View rooms & availability" }),
-    ).toBeVisible();
-    expect(
-      await page.evaluate(
-        () => document.documentElement.scrollWidth <= window.innerWidth,
-      ),
-    ).toBe(true);
+    await expect(page.locator(".pin-spacer")).toHaveCount(0);
+    const link = journey.getByRole("link", {
+      name: "View rooms & availability",
+    });
+    await link.scrollIntoViewIfNeeded();
+    await expect(link).toBeVisible();
     await context.close();
   }
 });

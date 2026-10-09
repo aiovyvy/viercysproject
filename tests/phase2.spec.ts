@@ -2,6 +2,12 @@ import { Webhook } from "svix";
 import { test, expect } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { propertyToday, addDays } from "../src/lib/policy";
+const skipGuide = () =>
+  window.localStorage.setItem("viercys-booking-guide-v1", "done");
+const query = (search: Record<string, string | number>) =>
+  new URLSearchParams(
+    Object.entries(search).map(([key, value]) => [key, String(value)]),
+  ).toString();
 const stay = (offset = 30) => ({
   arrival: addDays(propertyToday(), offset),
   departure: addDays(propertyToday(), offset + 3),
@@ -14,38 +20,38 @@ test("romantic booking, post-booking itinerary, email preview and staff visibili
   browser,
 }) => {
   const search = stay();
-  await page.goto(
-    "/availability?" +
-      new URLSearchParams(
-        Object.entries(search).map(([key, value]) => [key, String(value)]),
-      ),
-  );
-  const category = page.locator("article.j-room").filter({
-    has: page.getByRole("heading", { name: "Signature Suite", exact: true }),
-  });
-  await category.getByLabel("Rooms to select").fill("1");
-  await page.getByRole("link", { name: "Continue to experiences" }).click();
-  await page.getByLabel("Romantic dinner quantity").fill("1");
-  await page.getByLabel("Breakfast quantity").fill("6");
+  await page.addInitScript(skipGuide);
+  await page.goto("/book/rooms?" + query(search));
+  await page.getByRole("button", { name: "Select Signature Suite" }).click();
+  await page.getByText("Add optional experiences").click();
+  await page.getByRole("button", { name: "Add one romantic dinner" }).click();
+  for (let i = 0; i < 6; i++)
+    await page.getByRole("button", { name: "Add one breakfast" }).click();
+  // 3 x 320 + 6 x 22 breakfast; dinner is a request, excluded from the total.
+  await expect(page.locator(".book-price-total")).toContainText("€1,092.00");
   await page
     .getByLabel("Full name", { exact: true })
     .fill("Alex Mediterranean");
   await page
     .getByLabel("Email address", { exact: true })
     .fill("alex.workflow@example.test");
-  await page.getByLabel("Phone (optional)").fill("+30 000 0000");
-  await page.getByRole("checkbox", { name: /I accept the displayed/ }).check();
-  await page.getByRole("button", { name: /Confirm demo booking/ }).click();
+  await page.getByLabel(/Phone/).fill("+30 000 0000");
+  await page.getByRole("checkbox", { name: /simulated booking/ }).check();
+  await page.getByRole("button", { name: "Confirm demo reservation" }).click();
   await expect(page).toHaveURL(/booking\/VRC-/);
   await expect(
-    page.getByRole("heading", { name: "Your sanctuary awaits." }),
+    page.getByRole("heading", { name: "You're booked." }),
   ).toBeVisible();
-  await expect(page.getByText("Demo preview — no email sent")).toBeVisible();
   await expect(
-    page.getByText("demo-paid", { exact: false }).first(),
+    page.getByText("Email is not configured for this demo", { exact: false }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Simulated payment, no real charge"),
   ).toBeVisible();
   const reference = new URL(page.url()).pathname.split("/").pop()!;
-  await page.getByRole("link", { name: "Your Journey", exact: true }).click();
+  await page
+    .getByRole("link", { name: "Plan your visit", exact: true })
+    .click();
   await page.getByRole("button", { name: "Generate my journey" }).click();
   await expect(page.getByText(/Deterministic demo suggestions/)).toBeVisible();
   await page
@@ -58,7 +64,7 @@ test("romantic booking, post-booking itinerary, email preview and staff visibili
   await expect(page.getByLabel("Morning — suggestions").first()).toHaveValue(
     "Our own quiet breakfast and village walk.",
   );
-  await page.getByRole("link", { name: "Email preview", exact: true }).click();
+  await page.goto("/booking/" + reference + "/email-preview");
   await page.route("**/images/**", (route) => route.abort());
   await expect(
     page.frameLocator("iframe").getByText(reference, { exact: true }),
@@ -69,7 +75,9 @@ test("romantic booking, post-booking itinerary, email preview and staff visibili
   });
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(
-    page.frameLocator("iframe").getByText("Simulated amount due", { exact: true }),
+    page
+      .frameLocator("iframe")
+      .getByText("Simulated amount due", { exact: true }),
   ).toBeVisible();
   await page.screenshot({
     path: "test-results/email-mobile.png",
@@ -93,19 +101,15 @@ test("romantic booking, post-booking itinerary, email preview and staff visibili
   await expect(staff.getByText(/possible room-nights/)).toBeVisible();
   await staffContext.close();
   await page.goto("/booking/" + reference);
+  await page.getByText("Cancel reservation", { exact: true }).click();
   await page
-    .getByRole("button", { name: "Cancel reservation", exact: true })
-    .click();
-  await page
-    .getByRole("checkbox", {
-      name: "I confirm cancellation of " + reference + ".",
-    })
+    .getByRole("checkbox", { name: "I want to cancel " + reference + "." })
     .check();
   await page
     .getByRole("button", { name: "Confirm cancellation", exact: true })
     .click();
   await expect(
-    page.getByText("cancelled · demo-refunded · not-arrived"),
+    page.getByRole("heading", { name: "Reservation cancelled." }),
   ).toBeVisible();
 });
 test("concurrent requests, duplicate retries and secure guest lookup", async ({
@@ -182,32 +186,25 @@ test("server rejects hostile dates and cross-site actions; mobile checkout works
     ).status(),
   ).toBe(403);
   await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(skipGuide);
   const search = stay(120);
-  await page.goto(
-    "/availability?" +
-      new URLSearchParams(
-        Object.entries(search).map(([key, value]) => [key, String(value)]),
-      ),
-  );
-  const room = page.locator("article.j-room").first();
-  await room.getByLabel("Rooms to select").fill("1");
-  await page.getByRole("link", { name: "Continue to experiences" }).click();
+  // Old links redirect into the new flow.
+  await page.goto("/availability?" + query(search));
+  await expect(page).toHaveURL(/\/book\/rooms\?/);
+  await page.getByRole("button", { name: "Select Essential Room" }).click();
+  await expect(page.locator(".book-price-total")).toContainText("€540.00");
   await page.getByLabel("Full name", { exact: true }).fill("Mobile Guest");
   await page
     .getByLabel("Email address", { exact: true })
     .fill("mobile@example.test");
-  await page.getByRole("checkbox", { name: /I accept the displayed/ }).check();
-  await page.getByRole("button", { name: /Confirm demo booking/ }).click();
+  await page.getByRole("checkbox", { name: /simulated booking/ }).check();
+  await page.getByRole("button", { name: "Confirm demo reservation" }).click();
   await expect(page).toHaveURL(/booking\/VRC-/);
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBe(true);
-  await page.screenshot({
-    path: "test-results/booking-mobile.png",
-    fullPage: true,
-  });
 });
 
 test("room change is previewed before persistence and reflected in staff inventory", async ({
@@ -227,17 +224,14 @@ test("room change is previewed before persistence and reflected in staff invento
   expect(response.ok()).toBeTruthy();
   const { booking } = await response.json();
   await page.goto("/booking/" + booking.reference);
+  await page.getByText("Change guests or rooms", { exact: true }).click();
+  await page.getByLabel(/Room 106 · Essential/).check();
+  await page.getByLabel("Adults", { exact: true }).fill("3");
   await page
-    .getByRole("button", { name: "Modify dates, guests or rooms" })
-    .click();
-  await page.getByLabel(/Room 106 · essential/).check();
-  await page.getByLabel("New adults").fill("3");
-  await page.getByRole("checkbox", { name: /I accept repricing/ }).check();
-  await page
-    .getByRole("button", { name: "Preview new availability and total" })
+    .getByRole("button", { name: "Check price and availability" })
     .click();
   await expect(
-    page.getByRole("heading", { name: "Review your proposed change" }),
+    page.getByRole("heading", { name: "Review the change" }),
   ).toBeVisible();
   expect(
     (
@@ -246,10 +240,9 @@ test("room change is previewed before persistence and reflected in staff invento
       ).json()
     ).booking.rooms,
   ).toBe(1);
-  await page
-    .getByRole("button", { name: "Confirm reservation changes" })
-    .click();
-  await expect(page.getByText(/3 adults · 0 children · 2 rooms/)).toBeVisible();
+  await page.getByRole("button", { name: "Confirm change" }).click();
+  await expect(page.getByText("Your stay has been updated")).toBeVisible();
+  await expect(page.locator(".book-stay")).toContainText("3 adults");
   expect(
     (
       await (
