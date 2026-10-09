@@ -69,7 +69,7 @@ test("romantic booking, post-booking itinerary, email preview and staff visibili
   });
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(
-    page.frameLocator("iframe").getByText("Demo total", { exact: true }),
+    page.frameLocator("iframe").getByText("Simulated amount due", { exact: true }),
   ).toBeVisible();
   await page.screenshot({
     path: "test-results/email-mobile.png",

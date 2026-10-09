@@ -21,6 +21,8 @@ const {
 const { validateSearch, propertyToday, addDays, dayNumber } =
   await import("../src/lib/policy");
 const { sendEmails, emailHtml } = await import("../src/lib/email");
+const { createInvites, findInvite, listInvites } =
+  await import("../src/lib/invites");
 const input = {
   arrival: addDays(propertyToday(), 20),
   departure: addDays(propertyToday(), 23),
@@ -112,8 +114,9 @@ test("20 rooms, capacities and transparent price", () => {
   );
   assert.equal(total.roomSubtotal, 54000);
   assert.equal(total.extrasSubtotal, 13200);
-  assert.equal(total.tax, 8736);
-  assert.equal(total.total, 75936);
+  assert.equal(total.tax, 0);
+  assert.equal(total.voucher, null);
+  assert.equal(total.total, 67200);
   assert.equal(total.pendingApprovalTotal, 14000);
 });
 test("atomic overlap, adjacent interval and idempotent retries", () => {
@@ -216,7 +219,7 @@ test("email fallback persists preview, escapes guest text and remains readable w
   );
   assert.ok(html.includes("Alex &lt;script&gt;"));
   assert.ok(html.includes(booking.reference));
-  assert.ok(html.includes("Demo total"));
+  assert.ok(html.includes("Simulated amount due"));
   assert.ok(html.includes("No real charge"));
   assert.ok(!html.includes("<script>"));
   await sendEmails(booking.reference);
@@ -302,4 +305,90 @@ test("Resend errors persist; retries reuse the same provider key and HTML; accep
     if (previousFrom === undefined) delete process.env.RESEND_FROM;
     else process.env.RESEND_FROM = previousFrom;
   }
+});
+
+test("voucher covers up to three Essential nights; upgrades and extra nights are charged", () => {
+  const rooms = listRooms();
+  const essential = rooms.find((room) => room.category === "essential")!;
+  const signature = rooms.find((room) => room.category === "signature")!;
+  const stay = (count: number) => ({
+    ...input,
+    departure: addDays(input.arrival, count),
+  });
+  const due = (count: number, room = essential) =>
+    pricing(stay(count), [room], [], true);
+  assert.equal(due(3).total, 0);
+  assert.equal(due(3).voucher!.discount, 54000);
+  assert.equal(due(4).total, 18000);
+  assert.equal(due(5).total, 36000);
+  assert.equal(due(5).voucher!.extraNights, 2);
+  assert.equal(due(2).total, 0);
+  assert.equal(due(2).voucher!.unusedNights, 1);
+  assert.equal(due(1).voucher!.coveredNights, 1);
+  // Signature: upgrade difference on every night, full rate on extra nights.
+  assert.equal(due(3, signature).total, 3 * (32000 - 18000));
+  assert.equal(due(3, signature).voucher!.upgradeTotal, 42000);
+  assert.equal(due(5, signature).total, 5 * 32000 - 3 * 18000);
+  // Voucher applies to one room only; extras are never covered.
+  const twoRooms = pricing(
+    { ...stay(3), adults: 4, rooms: 2 },
+    [essential, rooms.filter((room) => room.category === "essential")[1]],
+    [{ id: "breakfast", quantity: 2 }],
+    true,
+  );
+  assert.equal(twoRooms.total, 54000 + 4400);
+});
+test("invitations are single-use, expire, and survive modification but not cancellation", () => {
+  const arrival = addDays(propertyToday(), 200);
+  const stay = { ...input, arrival, departure: addDays(arrival, 3) };
+  const [invite] = createInvites(1, { label: "Student" });
+  assert.equal(findInvite(invite.token).state, "valid");
+  assert.equal(findInvite("not-a-real-token-at-all-xx").state, "invalid");
+  assert.equal(findInvite(undefined).state, "invalid");
+  assert.ok(!JSON.stringify(listInvites()).includes(invite.token));
+  const booking = createBooking(
+    make({ ...stay, roomIds: ["S-108"], inviteToken: invite.token }),
+  );
+  assert.equal(booking.pricing.total, 0);
+  assert.ok(booking.invite_id);
+  // A double-submitted request returns the same booking even once the cookie is gone.
+  const [second] = createInvites(1);
+  const retry = make({ ...stay, roomIds: ["S-201"], inviteToken: second.token });
+  const first = createBooking(retry);
+  assert.equal(
+    createBooking({ ...retry, inviteToken: "" }).reference,
+    first.reference,
+  );
+  assert.equal(findInvite(invite.token).state, "redeemed");
+  assert.throws(
+    () =>
+      createBooking(
+        make({ ...stay, roomIds: ["S-109"], inviteToken: invite.token }),
+      ),
+    /already been used/,
+  );
+  const guest = session(createSession("guest", booking.reference));
+  const extended = modify(
+    booking.reference,
+    { ...stay, departure: addDays(arrival, 5) },
+    guest,
+  );
+  assert.equal(extended.pricing.total, 36000);
+  assert.equal(extended.pricing.voucher!.extraNights, 2);
+  cancel(booking.reference, guest, true);
+  assert.equal(findInvite(invite.token).state, "valid");
+  const [expired] = createInvites(1, { days: 1 });
+  db()
+    .prepare("UPDATE invites SET expires_at=? WHERE id=?")
+    .run(Date.now() - 1, expired.id);
+  assert.equal(findInvite(expired.token).state, "expired");
+  assert.throws(
+    () =>
+      createBooking(
+        make({ ...stay, roomIds: ["S-110"], inviteToken: expired.token }),
+      ),
+    /expired/,
+  );
+  assert.throws(() => createInvites(0));
+  assert.throws(() => createInvites(61));
 });

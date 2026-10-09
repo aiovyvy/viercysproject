@@ -9,7 +9,13 @@ export const POLICY = {
   maxNights: 30,
   horizonDays: 730,
   timeZone: "Europe/Athens",
-  taxRate: 0.13,
+};
+// Demo voucher rule: up to three Essential Room nights on one room. Other
+// tiers pay the per-night difference on every night; extra nights pay in full.
+export const VOUCHER = {
+  nights: 3,
+  baseCategory: "essential",
+  inviteDays: 30,
 };
 export function propertyToday(now = new Date()) {
   return new Intl.DateTimeFormat("en-CA", {

@@ -26,10 +26,18 @@ import {
   saveItinerary,
   loadItinerary,
   queueEmail,
+  voucherCredit,
   type BookingInput,
 } from "@/lib/booking";
+import {
+  createInvites,
+  findInvite,
+  listInvites,
+  INVITE_COOKIE,
+  INVITE_MESSAGES,
+} from "@/lib/invites";
 import { CATEGORIES, EXTRAS, CURRENCY, money } from "@/lib/catalog";
-import { searchFrom, propertyToday } from "@/lib/policy";
+import { searchFrom, propertyToday, nights, VOUCHER } from "@/lib/policy";
 import { sendEmails, requestLookup, emailHtml, manageLink } from "@/lib/email";
 export const runtime = "nodejs";
 function setCookie(response: NextResponse, name: string, value: string) {
@@ -56,6 +64,9 @@ export async function handler(
       ? admin
       : null;
   const owner = staff || guest;
+  const inviteToken = cookieStore.get(INVITE_COOKIE)?.value;
+  const invite = findInvite(inviteToken);
+  const voucher = invite.state === "valid";
   try {
     if (request.method !== "GET") {
       const origin = request.headers.get("origin");
@@ -117,6 +128,31 @@ export async function handler(
       return NextResponse.json({ received: true });
     }
     const body = request.method === "GET" ? {} : await request.json();
+    if (route === "invite" && request.method === "GET")
+      return NextResponse.json(voucherStatus(invite));
+    if (route === "invite/claim" && request.method === "POST") {
+      rateLimit("invite-" + request.headers.get("x-forwarded-for"), 60);
+      const claimed = findInvite(String(body.token || ""));
+      if (claimed.state !== "valid")
+        return NextResponse.json(
+          { error: INVITE_MESSAGES[claimed.state], ...voucherStatus(claimed) },
+          { status: 400 },
+        );
+      const response = NextResponse.json(voucherStatus(claimed));
+      response.cookies.set(INVITE_COOKIE, String(body.token), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        expires: new Date(claimed.invite!.expires_at),
+        path: "/",
+      });
+      return response;
+    }
+    if (route === "invite/remove" && request.method === "POST") {
+      const response = NextResponse.json(voucherStatus({ state: "invalid" }));
+      response.cookies.delete(INVITE_COOKIE);
+      return response;
+    }
     if (route === "catalog")
       return NextResponse.json({
         categories: CATEGORIES,
@@ -134,11 +170,21 @@ export async function handler(
       return NextResponse.json({
         search: input,
         rooms,
-        categories: CATEGORIES.map((category) => ({
-          ...category,
-          remaining: rooms.filter((room) => room.category === category.id)
-            .length,
-        })),
+        voucher: voucherStatus(invite),
+        categories: CATEGORIES.map((category) => {
+          const stayTotal = category.rate * nights(input);
+          const credit = voucher
+            ? voucherCredit(nights(input), { id: "", rate: category.rate })
+            : null;
+          return {
+            ...category,
+            remaining: rooms.filter((room) => room.category === category.id)
+              .length,
+            stayTotal,
+            voucher: credit,
+            due: stayTotal - (credit?.discount ?? 0),
+          };
+        }),
         extras: EXTRAS,
         currency: CURRENCY,
       });
@@ -146,7 +192,7 @@ export async function handler(
     if (route === "quote") {
       const input = searchFrom(body);
       return NextResponse.json({
-        pricing: quote(input, body.roomIds, body.extras || []),
+        pricing: quote(input, body.roomIds, body.extras || [], "", voucher),
         currency: CURRENCY,
       });
     }
@@ -154,12 +200,14 @@ export async function handler(
       const booking = createBooking({
         ...body,
         ...searchFrom(body),
+        inviteToken: body.useVoucher === true ? inviteToken || "" : undefined,
       } as BookingInput);
       await sendEmails(booking.reference);
       const response = NextResponse.json({
         booking,
         email: emailStatuses(booking.reference),
       });
+      if (booking.invite_id) response.cookies.delete(INVITE_COOKIE);
       setCookie(
         response,
         "viercys_guest",
@@ -219,6 +267,7 @@ export async function handler(
             body.roomIds || booking.roomIds,
             booking.extras,
             reference,
+            Boolean(booking.invite_id),
           ),
           currency: booking.currency,
         });
@@ -572,6 +621,28 @@ export async function handler(
           currency: CURRENCY,
         });
       }
+      if (route === "admin/invites") {
+        if (request.method === "POST") {
+          if (staff.role !== "manager")
+            return NextResponse.json(
+              { error: "Manager access required." },
+              { status: 403 },
+            );
+          const origin = process.env.APP_URL || new URL(request.url).origin;
+          const created = createInvites(Number(body.count || 1), {
+            label: body.label,
+            days: body.days === undefined ? undefined : Number(body.days),
+          });
+          return NextResponse.json({
+            created: created.map((item) => ({
+              ...item,
+              url: `${origin}/invite/${item.token}`,
+            })),
+            invites: listInvites(),
+          });
+        }
+        return NextResponse.json({ invites: listInvites() });
+      }
       if (route === "admin/remove-block" && request.method === "POST") {
         if (staff.role !== "manager")
           return NextResponse.json(
@@ -679,6 +750,17 @@ export async function handler(
       },
     );
   }
+}
+function voucherStatus(result: {
+  state: string;
+  invite?: { expires_at: number; nights: number } | null;
+}) {
+  return {
+    state: result.state,
+    active: result.state === "valid",
+    nights: result.invite?.nights ?? VOUCHER.nights,
+    expires: result.invite?.expires_at ?? null,
+  };
 }
 async function routeHandler(
   request: NextRequest,

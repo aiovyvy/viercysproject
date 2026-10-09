@@ -54,15 +54,17 @@ export function db() {
       insert.run("S-" + number, number, cat.id, cat.capacity, cat.rate);
     }
   });
-  if (
-    !connection
-      .prepare("PRAGMA table_info(email_attempts)")
-      .all()
-      .some((row) => row.name === "claimed_at")
-  )
-    connection.exec(
-      "ALTER TABLE email_attempts ADD COLUMN claimed_at INTEGER NOT NULL DEFAULT 0",
-    );
+  const addColumn = (table: string, column: string, definition: string) => {
+    if (
+      !connection
+        .prepare(`PRAGMA table_info(${table})`)
+        .all()
+        .some((row) => row.name === column)
+    )
+      connection.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  };
+  addColumn("email_attempts", "claimed_at", "INTEGER NOT NULL DEFAULT 0");
+  addColumn("bookings", "invite_id", "TEXT REFERENCES invites(id)");
   singleton = connection;
   const password = process.env.VIERCYS_ADMIN_PASSWORD;
   if (password && password.length >= 12)

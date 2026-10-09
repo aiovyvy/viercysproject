@@ -1,6 +1,12 @@
 import { randomBytes } from "node:crypto";
 import { db, transaction, hash, type Session } from "./db";
 import {
+  findInvite,
+  redeemInvite,
+  releaseInvite,
+  INVITE_MESSAGES,
+} from "./invites";
+import {
   CATEGORIES,
   EXTRAS,
   CURRENCY,
@@ -12,7 +18,7 @@ import {
   nights,
   propertyToday,
   dayNumber,
-  POLICY,
+  VOUCHER,
   type SearchInput,
 } from "./policy";
 export type Pricing = {
@@ -34,9 +40,21 @@ export type Pricing = {
   }[];
   roomSubtotal: number;
   extrasSubtotal: number;
+  voucher: VoucherCredit | null;
+  /** Rates are tax-inclusive; kept at 0 for bookings stored before the voucher rule. */
   tax: number;
   total: number;
   pendingApprovalTotal: number;
+};
+export type VoucherCredit = {
+  roomId: string;
+  coveredNights: number;
+  unusedNights: number;
+  extraNights: number;
+  allowancePerNight: number;
+  upgradePerNight: number;
+  upgradeTotal: number;
+  discount: number;
 };
 export type Booking = SearchInput & {
   reference: string;
@@ -55,6 +73,7 @@ export type Booking = SearchInput & {
   checkin_status: string;
   version: number;
   created_at: string;
+  invite_id: string | null;
 };
 export type BookingInput = SearchInput & {
   roomIds: string[];
@@ -63,6 +82,8 @@ export type BookingInput = SearchInput & {
   requests?: string;
   consent: boolean;
   idempotencyKey: string;
+  /** Raw invitation token from the server-side cookie, never a client discount. */
+  inviteToken?: string;
 };
 function assertSearch(input: SearchInput) {
   const error = validateSearch(input);
@@ -123,10 +144,31 @@ export function allocation(input: SearchInput, rooms: Room[]) {
     children,
   }));
 }
+export function voucherCredit(
+  stayNights: number,
+  room: Pick<Room, "id" | "rate">,
+): VoucherCredit {
+  const allowancePerNight = CATEGORIES.find(
+    (cat) => cat.id === VOUCHER.baseCategory,
+  )!.rate;
+  const coveredNights = Math.min(VOUCHER.nights, stayNights);
+  const upgradePerNight = Math.max(0, room.rate - allowancePerNight);
+  return {
+    roomId: room.id,
+    coveredNights,
+    unusedNights: VOUCHER.nights - coveredNights,
+    extraNights: stayNights - coveredNights,
+    allowancePerNight,
+    upgradePerNight,
+    upgradeTotal: upgradePerNight * stayNights,
+    discount: coveredNights * Math.min(room.rate, allowancePerNight),
+  };
+}
 export function pricing(
   input: SearchInput,
   rooms: Room[],
   selected: ExtraSelection[] = [],
+  withVoucher = false,
 ): Pricing {
   allocation(input, rooms);
   if (!Array.isArray(selected) || selected.length > EXTRAS.length)
@@ -165,14 +207,15 @@ export function pricing(
   const pendingApprovalTotal = extras
     .filter((extra) => extra.status === "pending-approval")
     .reduce((sum, item) => sum + item.subtotal, 0);
-  const tax = Math.round((roomSubtotal + extrasSubtotal) * POLICY.taxRate);
+  const voucher = withVoucher ? voucherCredit(nights(input), rooms[0]) : null;
   return {
     rooms: rows,
     extras,
     roomSubtotal,
     extrasSubtotal,
-    tax,
-    total: roomSubtotal + extrasSubtotal + tax,
+    voucher,
+    tax: 0,
+    total: roomSubtotal + extrasSubtotal - (voucher?.discount ?? 0),
     pendingApprovalTotal,
   };
 }
@@ -181,6 +224,7 @@ export function quote(
   ids: string[],
   extras: ExtraSelection[] = [],
   exclude = "",
+  withVoucher = false,
 ) {
   if (!Array.isArray(ids) || ids.some((id) => typeof id !== "string"))
     throw new Error("Select valid physical rooms.");
@@ -191,7 +235,7 @@ export function quote(
     throw new Error(
       "A selected room is no longer available. Please search again.",
     );
-  return pricing(input, rooms, extras);
+  return pricing(input, rooms, extras, withVoucher);
 }
 export function getBooking(reference: string): Booking | null {
   const row = db()
@@ -251,8 +295,13 @@ export function createBooking(input: BookingInput) {
     (input.guest.phone?.length || 0) > 40
   )
     throw new Error("Shorten your phone number or special requests.");
+  const useVoucher = input.inviteToken !== undefined;
+  // The token is excluded so a retry after the voucher cookie is cleared still
+  // matches the original request.
   const canonical = {
     ...input,
+    inviteToken: undefined,
+    useVoucher,
     guest: {
       name: input.guest.name.trim(),
       email,
@@ -282,7 +331,11 @@ export function createBooking(input: BookingInput) {
         "A selected room was just reserved. Please search again.",
       );
     const allocations = allocation(input, rooms);
-    const total = pricing(input, rooms, input.extras || []);
+    if (useVoucher) {
+      const { state } = findInvite(input.inviteToken);
+      if (state !== "valid") throw new Error(INVITE_MESSAGES[state]);
+    }
+    const total = pricing(input, rooms, input.extras || [], useVoucher);
     const reference = "VRC-" + randomBytes(6).toString("hex").toUpperCase();
     db()
       .prepare(
@@ -309,6 +362,10 @@ export function createBooking(input: BookingInput) {
       db()
         .prepare("INSERT INTO booked_rooms VALUES(?,?,?,?)")
         .run(reference, slot.room_id, slot.adults, slot.children);
+    if (useVoucher)
+      db()
+        .prepare("UPDATE bookings SET invite_id=? WHERE reference=?")
+        .run(redeemInvite(input.inviteToken!, reference), reference);
     db()
       .prepare("INSERT OR IGNORE INTO guests(email,name,phone) VALUES(?,?,?)")
       .run(email, canonical.guest.name, canonical.guest.phone);
@@ -353,7 +410,12 @@ export function modify(
     if (rooms.length !== ids.length)
       throw new Error("Your rooms are unavailable on those dates.");
     const slots = allocation(input, rooms);
-    const total = pricing(input, rooms, current.extras);
+    const total = pricing(
+      input,
+      rooms,
+      current.extras,
+      Boolean(current.invite_id),
+    );
     db().prepare("DELETE FROM booked_rooms WHERE reference=?").run(reference);
     db()
       .prepare(
@@ -423,6 +485,7 @@ export function cancel(
         "UPDATE bookings SET status='cancelled',payment_status='demo-refunded',version=version+1 WHERE reference=?",
       )
       .run(reference);
+    releaseInvite(reference);
     db()
       .prepare(
         "INSERT OR IGNORE INTO payment_records(id,reference,status,amount,currency) VALUES(?,?,?,?,?)",
