@@ -874,3 +874,17 @@ fieldset.book-card legend + * {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+.book-voucher.warn p + p {
+  margin-top: 8px;
+}
+.book-voucher a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.stay-conflict h2 {
+  font-size: 22px;
+  margin-bottom: 8px;
+}
+.stay-conflict .stay-actions {
+  margin-top: 14px;
+}

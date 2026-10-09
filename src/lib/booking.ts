@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { db, transaction, hash, type Session } from "./db";
+import { db, transaction, hash, listRooms, type Session } from "./db";
 import {
   findInvite,
   redeemInvite,
@@ -18,6 +18,7 @@ import {
   nights,
   propertyToday,
   dayNumber,
+  addDays,
   VOUCHER,
   canCancelOnline,
   cancelOnlineUntil,
@@ -241,6 +242,60 @@ export function quote(
     );
   return pricing(input, rooms, extras, withVoucher);
 }
+export const ROOM_UNAVAILABLE =
+  "Your room isn't free for all of those nights. Your current booking is unchanged.";
+/**
+ * When a date change or extension collides with another booking, find what
+ * would work instead: the longest extension in the same room(s), and/or
+ * free rooms of the same type for the whole requested stay.
+ */
+export function changeOptions(booking: Booking, search: SearchInput) {
+  const byId = new Map(listRooms().map((room) => [room.id, room]));
+  const free = available(search, booking.reference);
+  const moveTo: string[] = [];
+  for (const id of booking.roomIds) {
+    const keep = free.find((room) => room.id === id && !moveTo.includes(id));
+    const swap = free.find(
+      (room) =>
+        room.category === byId.get(id)?.category &&
+        !moveTo.includes(room.id) &&
+        !booking.roomIds.includes(room.id),
+    );
+    const pick = keep ?? swap;
+    if (!pick) {
+      moveTo.length = 0;
+      break;
+    }
+    moveTo.push(pick.id);
+  }
+  let maxExtraNights = 0;
+  if (
+    search.arrival === booking.arrival &&
+    search.departure > booking.departure
+  )
+    for (
+      let extra = nights(search) - nights(booking) - 1;
+      extra >= 1;
+      extra--
+    ) {
+      const ids = available(
+        { ...search, departure: addDays(booking.departure, extra) },
+        booking.reference,
+      ).map((room) => room.id);
+      if (booking.roomIds.every((id) => ids.includes(id))) {
+        maxExtraNights = extra;
+        break;
+      }
+    }
+  return {
+    maxExtraNights,
+    moveTo:
+      moveTo.length === booking.roomIds.length &&
+      moveTo.some((id) => !booking.roomIds.includes(id))
+        ? moveTo.map((id) => ({ id, number: byId.get(id)!.number }))
+        : null,
+  };
+}
 export function getBooking(reference: string): Booking | null {
   const row = db()
     .prepare("SELECT * FROM bookings WHERE reference=?")
@@ -268,7 +323,7 @@ export function authorize(reference: string, auth: Session | null) {
     (auth.kind !== "admin" &&
       !(auth.verified
         ? auth.subject === booking.email
-        : auth.subject === reference))
+        : guestReferences(auth).includes(reference)))
   )
     throw new Error("Sign in with a verified link to access this reservation.");
   return booking;
@@ -501,8 +556,28 @@ export function cancel(
     return getBooking(reference)!;
   });
 }
+/**
+ * An unverified guest session can hold several booking references (a guest
+ * who books twice in one browser keeps access to both); a verified session's
+ * subject is an email address.
+ */
+export const MAX_GUEST_REFERENCES = 10;
+export function guestReferences(auth: Session) {
+  return auth.verified ? [] : auth.subject.split(",").filter(Boolean);
+}
+export function guestSubject(existing: Session | null, reference: string) {
+  const previous = existing?.kind === "guest" ? guestReferences(existing) : [];
+  return [...previous.filter((ref) => ref !== reference), reference]
+    .slice(-MAX_GUEST_REFERENCES)
+    .join(",");
+}
 export function listBookings(auth: Session | null) {
   if (!auth) return [];
+  if (auth.kind !== "admin" && !auth.verified)
+    return guestReferences(auth)
+      .map((reference) => getBooking(reference))
+      .filter((booking): booking is Booking => !!booking)
+      .reverse();
   const rows =
     auth.kind === "admin"
       ? db()
@@ -510,9 +585,7 @@ export function listBookings(auth: Session | null) {
           .all()
       : db()
           .prepare(
-            auth.verified
-              ? "SELECT reference FROM bookings WHERE email=? ORDER BY created_at DESC"
-              : "SELECT reference FROM bookings WHERE reference=?",
+            "SELECT reference FROM bookings WHERE email=? ORDER BY created_at DESC",
           )
           .all(auth.subject);
   return rows.map((row) => getBooking(String(row.reference))!);

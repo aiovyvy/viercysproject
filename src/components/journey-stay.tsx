@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Shell, useData, api, Feedback, GuestLinks } from "./journey";
+import { Shell, useData, api, Feedback, GuestLinks, ApiError } from "./journey";
 import { BookingShell, PriceSummary } from "./booking-flow";
 import type { Booking, Pricing } from "@/lib/booking";
 import {
@@ -110,6 +110,13 @@ type Preview = {
   label: string;
 };
 type Panel = "" | "extend" | "dates" | "advanced" | "cancel";
+type Conflict = {
+  message: string;
+  search: SearchInput;
+  label: string;
+  maxExtraNights: number;
+  moveTo: { id: string; number: string }[] | null;
+};
 export function Stay({
   reference,
   success = false,
@@ -127,12 +134,14 @@ export function Stay({
   const [newArrival, setNewArrival] = useState("");
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [preview, setPreview] = useState<Preview | null>(null);
+  const [conflict, setConflict] = useState<Conflict | null>(null);
   const [notice, setNotice] = useState("");
   const catalog = useData<{ rooms: Room[]; currency: string }>("/api/catalog");
   const booking = result.data?.booking;
   function open(next: Panel) {
     setPanel(panel === next ? "" : next);
     setPreview(null);
+    setConflict(null);
     setError("");
     setNotice("");
   }
@@ -161,6 +170,7 @@ export function Stay({
     setBusy(true);
     setError("");
     setPreview(null);
+    setConflict(null);
     try {
       const quote = await api<{ pricing: Pricing; currency: string }>(
         "/api/bookings/" + reference + "/modification-quote",
@@ -168,14 +178,21 @@ export function Stay({
       );
       setPreview({ ...quote, search, roomIds, label });
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Could not check those dates.";
-      setError(
-        /unavailable|reserved/i.test(message)
-          ? message +
-              " Try fewer nights or different dates. Your current booking is unchanged."
-          : message,
-      );
+      if (error instanceof ApiError && error.code === "room_unavailable") {
+        const options = (error.data?.options ?? {}) as Partial<Conflict>;
+        setConflict({
+          message: error.message,
+          search,
+          label,
+          maxExtraNights: options.maxExtraNights ?? 0,
+          moveTo: options.moveTo ?? null,
+        });
+      } else
+        setError(
+          error instanceof Error
+            ? error.message
+            : "Could not check those dates.",
+        );
     } finally {
       setBusy(false);
     }
@@ -323,6 +340,16 @@ export function Stay({
               </p>
             )}
           </section>
+          {cancelled && (
+            <nav className="stay-actions" aria-label="Next steps">
+              <Link className="book-button primary" href="/book">
+                Book a new stay
+              </Link>
+              <Link className="book-button" href="/">
+                Back to home
+              </Link>
+            </nav>
+          )}
           {!cancelled && (
             <nav className="stay-actions" aria-label="Manage your stay">
               <button
@@ -475,6 +502,78 @@ export function Stay({
               )}
             </div>
           )}
+          {conflict && booking && (
+            <section
+              className="book-error stay-conflict"
+              role="alert"
+              aria-labelledby="conflict-heading"
+            >
+              <h2 id="conflict-heading">Those nights aren&rsquo;t free.</h2>
+              <p>
+                {conflict.message} You asked for{" "}
+                {formatDate(conflict.search.arrival)} –{" "}
+                {formatDate(conflict.search.departure)}.
+              </p>
+              <div className="stay-actions">
+                {conflict.maxExtraNights > 0 && (
+                  <button
+                    type="button"
+                    className="book-button primary"
+                    disabled={busy}
+                    onClick={() => {
+                      setExtraNights(conflict.maxExtraNights);
+                      previewChange(
+                        {
+                          ...conflict.search,
+                          departure: addDays(
+                            booking.departure,
+                            conflict.maxExtraNights,
+                          ),
+                        },
+                        booking.roomIds,
+                        `Extended by ${conflict.maxExtraNights} night${conflict.maxExtraNights === 1 ? "" : "s"}`,
+                      );
+                    }}
+                  >
+                    Extend by {conflict.maxExtraNights} night
+                    {conflict.maxExtraNights === 1 ? "" : "s"} instead
+                  </button>
+                )}
+                {conflict.moveTo && (
+                  <button
+                    type="button"
+                    className="book-button"
+                    disabled={busy}
+                    onClick={() =>
+                      previewChange(
+                        conflict.search,
+                        conflict.moveTo!.map((room) => room.id),
+                        `${conflict.label}, moving to room ${conflict.moveTo!.map((room) => room.number).join(", ")} for the whole stay`,
+                      )
+                    }
+                  >
+                    Move to room{" "}
+                    {conflict.moveTo.map((room) => room.number).join(", ")} for
+                    the whole stay
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="book-button"
+                  onClick={() => setConflict(null)}
+                >
+                  Keep current booking
+                </button>
+              </div>
+              {!conflict.maxExtraNights && !conflict.moveTo && (
+                <p>
+                  No room of the same type is free for those nights. Try other
+                  dates, or ask the front desk (
+                  <Link href="/contact">Contact</Link>).
+                </p>
+              )}
+            </section>
+          )}
           {preview && (
             <section
               className="book-card stay-preview"
@@ -548,7 +647,9 @@ export function Stay({
           <section className="book-card" aria-labelledby="more-heading">
             <h2 id="more-heading">More for your stay</h2>
             <p className="book-change-links">
-              <Link href={`/itinerary/${reference}`}>Plan your visit</Link>
+              {!cancelled && (
+                <Link href={`/itinerary/${reference}`}>Plan your visit</Link>
+              )}
               <Link href="/concierge">Ask the concierge</Link>
               <Link href="/my-stay">All my bookings</Link>
             </p>

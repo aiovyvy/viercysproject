@@ -557,6 +557,26 @@ export function RoomsStep({
       )}
       {!initialError && data && data.rooms.length > 0 && (
         <>
+          {data.voucher.active &&
+            data.categories.find(
+              (cat) => cat.id === "essential" && cat.remaining === 0,
+            ) && (
+              <div className="book-voucher warn" role="note">
+                <p>
+                  <strong>
+                    Essential Rooms, which your voucher fully covers, are sold
+                    out for these dates.
+                  </strong>{" "}
+                  Try other dates to stay for €0, or choose a larger room and
+                  pay only the difference shown.
+                </p>
+                <p>
+                  <Link href={"/book?" + searchQuery(search)}>
+                    Choose other dates
+                  </Link>
+                </p>
+              </div>
+            )}
           {multi && (
             <p className="book-help">
               Choose {search.rooms} rooms with space for all {party} guests.
@@ -594,7 +614,11 @@ export function RoomsStep({
                       ))}
                     </ul>
                     <div className="book-room-price">
-                      {cat.voucher ? (
+                      {soldOut ? (
+                        <p className="book-room-due">
+                          Sold out for these dates
+                        </p>
+                      ) : cat.voucher ? (
                         <>
                           <p className="book-room-due">
                             {cat.due === 0
@@ -628,11 +652,12 @@ export function RoomsStep({
                         </>
                       )}
                     </div>
-                    <p className="book-room-left">
-                      {soldOut
-                        ? "Sold out for these dates"
-                        : `${cat.remaining} of ${cat.inventory} available for your dates`}
-                    </p>
+                    {!soldOut && (
+                      <p className="book-room-left">
+                        {cat.remaining} of {cat.inventory} available for your
+                        dates
+                      </p>
+                    )}
                     {!fits && !soldOut && (
                       <p className="book-room-warning">
                         Too small for {party} guests. Choose a larger room or{" "}
@@ -725,6 +750,8 @@ export function DetailsStep({
   const [extras, setExtras] = useState<ExtraSelection[]>([]);
   const [error, setError] = useState("");
   const [voucherLost, setVoucherLost] = useState("");
+  // Set when this exact checkout was already confirmed (Back button).
+  const [completed, setCompleted] = useState("");
   const [busy, setBusy] = useState(false);
   const [requestKey, setRequestKey] = useState("");
   const [quotedPayload, setQuotedPayload] = useState("");
@@ -742,7 +769,15 @@ export function DetailsStep({
     try {
       window.sessionStorage.setItem(storageKey, key);
     } catch {}
-    queueMicrotask(() => setRequestKey(key));
+    let done = "";
+    try {
+      done =
+        window.sessionStorage.getItem("viercys-completed-" + storageKey) || "";
+    } catch {}
+    queueMicrotask(() => {
+      setRequestKey(key);
+      setCompleted(done);
+    });
   }, [storageKey]);
   const payload = { ...search, roomIds, extras };
   const body = JSON.stringify(payload);
@@ -785,6 +820,10 @@ export function DetailsStep({
       });
       try {
         window.sessionStorage.removeItem(storageKey);
+        window.sessionStorage.setItem(
+          "viercys-completed-" + storageKey,
+          result.booking.reference,
+        );
       } catch {}
       router.push("/booking/" + result.booking.reference + "?success=1");
     } catch (error) {
@@ -813,6 +852,40 @@ export function DetailsStep({
     !!requestKey &&
     quotedPayload === body;
   const rooms = quote.data?.pricing.rooms ?? [];
+  if (completed)
+    return (
+      <section className="book-card" aria-labelledby="done-heading">
+        <h2 id="done-heading">You&rsquo;ve already booked this stay.</h2>
+        <p>
+          Booking {completed} is confirmed. Going back doesn&rsquo;t book it
+          again.
+        </p>
+        <p className="stay-actions">
+          <Link className="book-button primary" href={"/booking/" + completed}>
+            View your booking
+          </Link>
+          <Link className="book-button" href="/book">
+            Book another stay
+          </Link>
+        </p>
+      </section>
+    );
+  if (roomIds.length === 0)
+    return (
+      <section className="book-card" aria-labelledby="no-room-heading">
+        <h2 id="no-room-heading">Choose a room first.</h2>
+        <p>
+          This step needs a room. Pick one for {formatDate(search.arrival)} –{" "}
+          {formatDate(search.departure)}.
+        </p>
+        <Link
+          className="book-button primary"
+          href={"/book/rooms?" + searchQuery(search)}
+        >
+          Choose a room
+        </Link>
+      </section>
+    );
   return (
     <div className="book-details">
       <section className="book-card" aria-labelledby="stay-heading">

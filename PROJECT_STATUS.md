@@ -24,6 +24,17 @@ The previous version of this file reported the voucher, invite route and tutoria
 | M4: concierge answered "voucher" and "contact" questions with a generic island paragraph | Rules moved to `src/lib/concierge.ts` with answers for voucher, contact, extend, change dates, cancel, prices/tax, breakfast, transfers, rooms, check-in and finding a booking, each with links. Concierge page has tap-to-ask questions and shows the links | Unit test (6 questions); `content.spec.ts` |
 | (link target) | `/faq` added now because Contact and the concierge link to it | `content.spec.ts` |
 
+### Group 3: dead ends (done, tested)
+
+| Audit item | Fix | Test |
+| --- | --- | --- |
+| H5: extending into a booked night said "no longer available. Please search again" with no alternative | The change preview returns `room_unavailable` (409) with options computed on the server: the longest extension that fits in the same room, and/or free rooms of the same type for the whole stay. The page says the booking is unchanged and offers **Extend by N nights instead**, **Move to room X for the whole stay** and **Keep current booking**; both options go through the normal price preview | `deadends.spec.ts`: both options end to end (4 → 5 nights, moved off room 104) |
+| M5: a cancelled booking offered "Plan your visit" and no way to book again | **Book a new stay** / **Back to home**; trip-planning and change actions hidden | `deadends.spec.ts` |
+| M6: Back after confirming showed "A selected room is no longer available" | The checkout remembers it was completed (sessionStorage) and shows "You've already booked this stay" with **View your booking** | `deadends.spec.ts` |
+| M7: voucher holders weren't told their free room type was sold out | Notice on the room step with **Choose other dates**; the sold-out card no longer says "Fully covered" | `deadends.spec.ts` |
+| Jargon: "Select exactly the requested number of different rooms" when no room was chosen | "Choose a room first" with a link back | `deadends.spec.ts` |
+| **New bug found while testing:** each booking replaced the browser's guest session, so a second booking in the same browser locked the guest out of the first | Unverified guest sessions now hold up to 10 booking references; a verified email session is never downgraded | Unit test (both bookings readable, a stranger's session is not); `deadends.spec.ts` relies on it |
+
 Test-only: Playwright sets `VIERCYS_DEV_OUTBOX` so access emails that can't be sent are appended to a server-side file the tests read. Nothing reads it over HTTP; leave it unset for classroom use.
 
 ## Verification on 10 October 2026

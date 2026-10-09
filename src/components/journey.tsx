@@ -46,6 +46,7 @@ export async function api<T>(
     throw new ApiError(
       result.error || "The request could not be completed.",
       result.code,
+      result,
     );
   return result;
 }
@@ -53,6 +54,7 @@ export class ApiError extends Error {
   constructor(
     message: string,
     public code?: string,
+    public data?: Record<string, unknown>,
   ) {
     super(message);
   }

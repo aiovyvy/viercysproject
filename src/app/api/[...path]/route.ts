@@ -31,6 +31,9 @@ import {
   loadItinerary,
   queueEmail,
   voucherCredit,
+  changeOptions,
+  ROOM_UNAVAILABLE,
+  guestSubject,
   type BookingInput,
 } from "@/lib/booking";
 import {
@@ -265,12 +268,15 @@ export async function handler(
         email: emailStatuses(booking.reference),
       });
       if (booking.invite_id) response.cookies.delete(INVITE_COOKIE);
-      setCookie(
-        request,
-        response,
-        "viercys_guest",
-        createSession("guest", booking.reference),
-      );
+      // A verified email session already covers this booking; otherwise add
+      // the reference to this browser's booking session.
+      if (!(guest?.verified && guest.subject === booking.email))
+        setCookie(
+          request,
+          response,
+          "viercys_guest",
+          createSession("guest", guestSubject(guest, booking.reference)),
+        );
       return response;
     }
     if (route === "bookings")
@@ -319,16 +325,33 @@ export async function handler(
           throw new Error(
             "Only a confirmed, not-arrived reservation can be modified.",
           );
-        return NextResponse.json({
-          pricing: quote(
-            searchFrom(body),
-            body.roomIds || booking.roomIds,
+        const search = searchFrom(body);
+        const roomIds: string[] = body.roomIds || booking.roomIds;
+        let pricing;
+        try {
+          pricing = quote(
+            search,
+            roomIds,
             booking.extras,
             reference,
             Boolean(booking.invite_id),
-          ),
-          currency: booking.currency,
-        });
+          );
+        } catch (error) {
+          if (
+            !(error instanceof Error) ||
+            !/no longer available/.test(error.message)
+          )
+            throw error;
+          return NextResponse.json(
+            {
+              error: ROOM_UNAVAILABLE,
+              code: "room_unavailable",
+              options: changeOptions(booking, search),
+            },
+            { status: 409 },
+          );
+        }
+        return NextResponse.json({ pricing, currency: booking.currency });
       }
       if (path[2] === "modify" && request.method === "POST") {
         const updated = modify(
@@ -582,7 +605,7 @@ export async function handler(
         request,
         response,
         "viercys_guest",
-        createSession("guest", match.reference),
+        createSession("guest", guestSubject(guest, match.reference)),
       );
       return response;
     }

@@ -440,3 +440,27 @@ test("online cancellation cutoff is two calendar days before arrival", () => {
   assert.equal(canCancelOnline("2026-10-20", "2026-10-18"), true);
   assert.equal(canCancelOnline("2026-10-20", "2026-10-19"), false);
 });
+test("one browser keeps access to every booking it made, and nothing else", async () => {
+  const { guestSubject, listBookings } = await import("../src/lib/booking");
+  const arrival = addDays(propertyToday(), 260);
+  const first = createBooking(
+    make({ arrival, departure: addDays(arrival, 2), roomIds: ["S-101"] }),
+  );
+  const second = createBooking(
+    make({ arrival, departure: addDays(arrival, 2), roomIds: ["S-102"] }),
+  );
+  const one = session(createSession("guest", guestSubject(null, first.reference)))!;
+  const both = session(
+    createSession("guest", guestSubject(one, second.reference)),
+  )!;
+  assert.equal(authorize(first.reference, both).reference, first.reference);
+  assert.equal(authorize(second.reference, both).reference, second.reference);
+  assert.deepEqual(
+    listBookings(both).map((booking) => booking.reference),
+    [second.reference, first.reference],
+  );
+  const stranger = session(createSession("guest", guestSubject(null, "VRC-000000000000")))!;
+  assert.throws(() => authorize(first.reference, stranger));
+  // A crafted subject cannot smuggle a reference it never booked.
+  assert.equal(guestSubject(null, "VRC-AAAAAAAAAAAA").split(",").length, 1);
+});
