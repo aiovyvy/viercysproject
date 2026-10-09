@@ -1,0 +1,1159 @@
+/*
+ * Homepage: a day on the island. Bright arrival, the arch passage, the
+ * philosophy and rooms by day, the destination and experiences at golden
+ * hour, and a blue-hour invitation to book at the end.
+ */
+.page,
+.finale {
+  --limestone: #ebe3d6;
+  --sand: #c6ad85;
+  --deep: #17303a;
+  --accent: #233f4b;
+  --serif: var(--font-display), Georgia, serif;
+  --sans: var(--font-text), Arial, sans-serif;
+}
+.page {
+  font-family: var(--sans);
+  font-size: 17px;
+  line-height: 1.65;
+  color: var(--ink);
+  overflow-x: clip;
+}
+.page h1,
+.page h2,
+.page h3 {
+  font-family: var(--serif);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1.02;
+}
+.page h2 {
+  font-size: clamp(40px, 5vw, 74px);
+}
+.page h2 em,
+.page h1 em {
+  font-style: italic;
+  font-weight: 400;
+}
+.kicker {
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 18px;
+}
+.sectionHead {
+  max-width: 720px;
+  margin-bottom: 56px;
+}
+.sectionHead > p:last-child {
+  margin-top: 18px;
+  color: #4b4d47;
+  max-width: 54ch;
+}
+.primary,
+.primaryLight,
+.ghostLight {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 0 28px;
+  font-family: var(--sans);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition:
+    background 0.25s,
+    color 0.25s;
+}
+.primary {
+  background: var(--deep);
+  color: #fff;
+}
+.primary:hover {
+  background: var(--accent);
+}
+.primaryLight {
+  background: #f8f4ec;
+  color: var(--deep);
+}
+.primaryLight:hover {
+  background: var(--sand);
+}
+.ghostLight {
+  border: 1px solid #ffffffb3;
+  color: #fff;
+}
+.ghostLight:hover {
+  background: #ffffff22;
+}
+.textLink,
+.inlineLink {
+  font-weight: 600;
+  color: var(--deep);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 6px;
+}
+.textLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+}
+.textLink span {
+  transition: transform 0.3s;
+}
+.textLink:hover span {
+  transform: translateX(5px);
+}
+
+/* ---------- Hero: arrival ---------- */
+.hero {
+  position: relative;
+  min-height: calc(100svh - 88px);
+  display: grid;
+  grid-template-rows: 1fr auto;
+  color: #fff;
+  isolation: isolate;
+  overflow: hidden;
+}
+.heroPhoto {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+}
+.heroPhoto img {
+  animation: arrive 1.8s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.heroShade {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(0deg, rgb(10 24 30 / 0.9) 0%, rgb(10 24 30 / 0.62) 38%, rgb(10 24 30 / 0.1) 72%, rgb(10 24 30 / 0) 85%),
+    linear-gradient(90deg, rgb(10 24 30 / 0.55) 0%, rgb(10 24 30 / 0) 55%);
+}
+.heroCoords {
+  position: absolute;
+  top: 32px;
+  right: 5vw;
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  opacity: 0.85;
+}
+.heroCopy {
+  align-self: end;
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.8fr);
+  gap: 24px 6vw;
+  align-items: end;
+  padding: 120px 5vw 40px;
+}
+/* Entrance runs on the children: GSAP owns the container's opacity. */
+.heroCopy > * {
+  animation: lift 1.2s 0.3s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.heroCopy > h1 {
+  animation-delay: 0.45s;
+}
+/* The actions only slide: a fading button would fail contrast mid-entrance. */
+.heroCopy > :last-child {
+  animation-name: slide;
+  animation-delay: 0.65s;
+}
+@keyframes slide {
+  from {
+    transform: translateY(30px);
+  }
+}
+.heroCopy .kicker {
+  grid-column: 1 / -1;
+  color: #f0e2c6;
+  margin: 0;
+}
+.hero h1 {
+  font-size: clamp(64px, 10vw, 156px);
+  line-height: 0.92;
+  text-shadow: 0 2px 30px rgb(0 0 0 / 0.25);
+}
+.heroAside p {
+  font-size: 19px;
+  line-height: 1.55;
+  max-width: 34ch;
+}
+.heroActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 26px;
+}
+/* Neutralise the legacy global .hero-book rules (kept as a test hook). */
+.heroActions > a {
+  margin: 0;
+  min-height: 52px;
+  padding: 0 28px;
+  font-size: 15px;
+}
+.heroSearch {
+  padding: 0 5vw 36px;
+  animation: lift 1.2s 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@keyframes arrive {
+  from {
+    clip-path: inset(10% 30% 0 30% round 999px 999px 0 0);
+    transform: scale(1.12);
+  }
+  to {
+    clip-path: inset(0 0 0 0 round 0);
+    transform: scale(1);
+  }
+}
+@keyframes lift {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+}
+
+/* ---------- Search forms ---------- */
+.searchBar,
+.searchCard {
+  display: grid;
+  font-family: var(--sans);
+}
+.searchBar {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  background: rgb(248 244 236 / 0.94);
+  backdrop-filter: blur(10px);
+  color: var(--ink);
+}
+.searchCard {
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: #233f4b33;
+  border: 1px solid #233f4b33;
+}
+.searchBar label,
+.searchCard label {
+  display: grid;
+  padding: 12px 18px;
+  background: transparent;
+}
+.searchCard label {
+  background: #fff;
+}
+.searchBar label + label {
+  border-left: 1px solid #233f4b26;
+}
+.searchBar span,
+.searchCard span {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #4b4d47;
+}
+.searchBar input,
+.searchBar select,
+.searchCard input,
+.searchCard select {
+  border: 0;
+  background: transparent;
+  font-size: 16px;
+  min-height: 44px;
+  width: 100%;
+  color: var(--ink);
+}
+.searchBar button,
+.searchCard button {
+  border: 0;
+  background: var(--deep);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 0 32px;
+  min-height: 56px;
+  transition: background 0.25s;
+}
+.searchBar button:hover,
+.searchCard button:hover {
+  background: var(--accent);
+}
+.searchCard button {
+  grid-column: 1 / -1;
+}
+
+/* ---------- Plan your stay ---------- */
+.plan {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 6vw;
+  align-items: center;
+  padding: 112px 6vw;
+  background: var(--limestone);
+  scroll-margin-top: 88px;
+}
+.plan h2 {
+  font-size: clamp(40px, 4.4vw, 64px);
+}
+.steps {
+  list-style: none;
+  counter-reset: step;
+  margin: 40px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0;
+}
+.steps li {
+  counter-increment: step;
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  column-gap: 8px;
+  padding: 18px 0;
+  border-top: 1px solid #233f4b26;
+}
+.steps li::before {
+  content: "0" counter(step);
+  grid-row: span 2;
+  font-family: var(--serif);
+  font-size: 30px;
+  line-height: 1;
+  color: var(--accent);
+}
+.steps strong {
+  font-size: 18px;
+}
+.steps span {
+  color: #4b4d47;
+}
+.planHelp {
+  margin-top: 24px;
+  color: #4b4d47;
+}
+.planCard {
+  background: #fbf8f2;
+  padding: 32px;
+  box-shadow: 0 40px 70px -50px rgb(23 48 58 / 0.5);
+}
+.planNote {
+  margin-top: 16px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #5d5e58;
+}
+
+/* ---------- Philosophy ---------- */
+.story {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 6vw;
+  padding: 140px 6vw 120px;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+.storyLead {
+  font-size: 20px;
+  line-height: 1.6;
+  max-width: 44ch;
+  margin-top: 28px;
+}
+.principles {
+  list-style: none;
+  margin: 48px 0 32px;
+  padding: 0;
+}
+.principles li {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  padding: 22px 0;
+  border-top: 1px solid #233f4b26;
+}
+.principles li:nth-child(2) {
+  margin-left: 8%;
+}
+.principles li:nth-child(3) {
+  margin-left: 16%;
+}
+.principles span {
+  font-family: var(--serif);
+  font-size: 26px;
+  font-style: italic;
+  color: var(--accent);
+  line-height: 1.1;
+}
+.principles p {
+  color: #4b4d47;
+  max-width: 46ch;
+}
+.principles strong {
+  display: block;
+  font-family: var(--serif);
+  font-size: 28px;
+  font-weight: 500;
+  line-height: 1.15;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+.storyArt {
+  position: relative;
+  min-height: 680px;
+}
+.storyTall,
+.storySmall {
+  position: absolute;
+  overflow: hidden;
+}
+.storyTall {
+  top: 0;
+  right: 0;
+  width: 78%;
+  aspect-ratio: 3 / 4.2;
+  border-radius: 999px 999px 0 0;
+}
+.storySmall {
+  bottom: 0;
+  left: 0;
+  width: 46%;
+  aspect-ratio: 3 / 4;
+  border: 10px solid var(--ivory);
+}
+.storyCaption {
+  position: absolute;
+  bottom: -36px;
+  right: 0;
+  font-size: 14px;
+  color: #5d5e58;
+}
+
+/* ---------- Rooms showcase ---------- */
+.rooms {
+  padding: 120px 6vw;
+  background: #f8f4ec;
+}
+.showcase {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(320px, 0.9fr);
+  gap: 48px;
+  align-items: end;
+}
+.slats {
+  display: flex;
+  gap: 12px;
+  height: min(70vh, 640px);
+  min-height: 460px;
+}
+.slat {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 999px 999px 0 0;
+  background: var(--limestone);
+  color: #fff;
+  cursor: pointer;
+  transition: flex 0.9s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.slat[aria-selected="true"] {
+  flex: 4.2;
+  cursor: default;
+}
+.slat img {
+  transition:
+    transform 1.2s cubic-bezier(0.2, 0.7, 0.2, 1),
+    filter 0.6s;
+}
+.slat[aria-selected="false"] img {
+  filter: saturate(0.7) brightness(0.8);
+}
+.slat:hover img {
+  transform: scale(1.04);
+}
+.slat::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(0deg, rgb(10 24 30 / 0.55), transparent 50%);
+}
+.slatName {
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  bottom: 28px;
+  font-family: var(--serif);
+  font-size: 26px;
+  white-space: nowrap;
+  transform: translateX(-50%) rotate(-90deg);
+  transform-origin: center;
+  translate: 0 -80px;
+  transition:
+    transform 0.6s,
+    translate 0.6s;
+}
+.slat[aria-selected="true"] .slatName {
+  left: 32px;
+  transform: none;
+  translate: none;
+  font-size: 34px;
+}
+.roomPanel {
+  padding-bottom: 8px;
+  animation: lift 0.6s ease both;
+}
+.roomPanel h3 {
+  font-size: clamp(40px, 3.6vw, 56px);
+}
+.roomHook {
+  font-size: 19px;
+  margin-top: 14px;
+}
+.roomFacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 36px;
+  margin: 28px 0 0;
+  padding-top: 20px;
+  border-top: 1px solid #233f4b26;
+}
+.roomFacts dt {
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #4b4d47;
+}
+.roomFacts dd {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 28px;
+}
+.roomNote {
+  margin-top: 16px;
+  font-size: 15px;
+  color: #4b4d47;
+}
+.roomActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 24px;
+  margin-top: 28px;
+}
+
+/* ---------- Destination ---------- */
+.destination {
+  padding: 120px 6vw 112px;
+  background: var(--deep);
+  color: #f3eee5;
+}
+.destination .kicker {
+  color: var(--sand);
+}
+.spotlight {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr);
+  gap: 6vw;
+  align-items: center;
+}
+.spotlightPhoto {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  max-height: 760px;
+  border-radius: 999px 999px 0 0;
+  overflow: hidden;
+}
+.spotlightCopy > p:not(.kicker) {
+  font-size: 19px;
+  max-width: 42ch;
+  margin-top: 24px;
+  color: #e7e1d6;
+}
+.spotlightFacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 40px;
+  margin: 32px 0 36px;
+  padding-top: 20px;
+  border-top: 1px solid #f3eee533;
+}
+.spotlightFacts dt {
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #d9d1c3;
+}
+.spotlightFacts dd {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 26px;
+}
+.destination .primary {
+  background: #f8f4ec;
+  color: var(--deep);
+}
+.destination .primary:hover {
+  background: var(--sand);
+}
+.horizons {
+  display: grid;
+  grid-template-columns: minmax(0, 0.7fr) minmax(0, 2fr);
+  gap: 48px;
+  margin-top: 112px;
+  padding-top: 48px;
+  border-top: 1px solid #f3eee533;
+}
+.horizonsHead h3 {
+  font-size: 36px;
+}
+.horizonsHead p {
+  margin: 12px 0 8px;
+  color: #d9d1c3;
+}
+.horizons .textLink {
+  color: #f3eee5;
+}
+.horizonScroll:focus-visible {
+  outline: 3px solid var(--sand);
+  outline-offset: 4px;
+}
+.horizonList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.horizonPhoto {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+}
+.horizonPhoto img {
+  filter: grayscale(1) contrast(0.9);
+  opacity: 0.75;
+  transition:
+    filter 0.8s,
+    opacity 0.8s,
+    transform 1.2s;
+}
+.horizonList li:hover img {
+  filter: none;
+  opacity: 1;
+  transform: scale(1.04);
+}
+.horizonList p {
+  margin-top: 12px;
+  font-size: 14px;
+  color: #d9d1c3;
+}
+.horizonList strong {
+  display: block;
+  font-family: var(--serif);
+  font-size: 24px;
+  font-weight: 500;
+  color: #f3eee5;
+}
+
+/* ---------- Experiences ---------- */
+.experiencesSection {
+  padding: 120px 6vw;
+}
+.experiences {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: 6vw;
+  align-items: start;
+}
+.expStage {
+  position: sticky;
+  top: 120px;
+  aspect-ratio: 4 / 5;
+  max-height: 640px;
+  overflow: hidden;
+  border-radius: 0 0 0 220px;
+}
+.expPhoto {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transform: scale(1.08);
+  transition:
+    opacity 0.7s,
+    transform 1.2s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.expPhoto[data-active="true"] {
+  opacity: 1;
+  transform: none;
+}
+.expList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid #233f4b26;
+}
+.expList li {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) auto;
+  gap: 8px 20px;
+  padding: 32px 0;
+  border-bottom: 1px solid #233f4b26;
+  transition: padding 0.4s;
+}
+.expList li[data-active="true"] {
+  padding-left: 12px;
+}
+.expThumb {
+  display: none;
+}
+.expNumber {
+  font-family: var(--serif);
+  font-size: 22px;
+  color: var(--accent);
+}
+.expText h3 {
+  font-size: clamp(30px, 2.6vw, 40px);
+  transition: color 0.3s;
+}
+.expList li[data-active="true"] h3 {
+  color: var(--accent);
+  font-style: italic;
+}
+.expText p {
+  margin-top: 8px;
+  color: #4b4d47;
+  max-width: 40ch;
+}
+.expMeta {
+  display: grid;
+  justify-items: end;
+  text-align: right;
+  font-family: var(--serif);
+  font-size: 26px;
+  line-height: 1.2;
+}
+.expMeta small {
+  font-family: var(--sans);
+  font-size: 13px;
+  color: #5d5e58;
+  max-width: 22ch;
+}
+
+/* ---------- Final invitation ---------- */
+.finale {
+  position: relative;
+  height: 170svh;
+  background: var(--deep);
+  color: #fff;
+  font-family: var(--sans);
+}
+.finaleSticky {
+  position: sticky;
+  top: 88px;
+  height: calc(100svh - 88px);
+  min-height: 680px;
+  display: grid;
+  align-items: center;
+  overflow: hidden;
+  isolation: isolate;
+}
+.finaleMedia {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+}
+.finaleMedia::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgb(8 18 24 / 0.82) 0%, rgb(8 18 24 / 0.45) 50%, rgb(8 18 24 / 0.1) 100%),
+    linear-gradient(0deg, rgb(8 18 24 / 0.6), transparent 40%);
+}
+.finaleCopy {
+  padding: 56px 6vw;
+  max-width: 900px;
+}
+.finaleCopy .kicker {
+  color: var(--sand);
+}
+.finale h2 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: clamp(54px, 6.6vw, 104px);
+  line-height: 0.95;
+  letter-spacing: -0.01em;
+}
+.finale h2 em {
+  font-style: italic;
+  font-weight: 400;
+}
+.finaleLead {
+  font-size: 20px;
+  line-height: 1.55;
+  max-width: 40ch;
+  margin-top: 28px;
+}
+.finaleActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 36px;
+}
+.finaleBook,
+.finaleGhost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60px;
+  padding: 0 36px;
+  font-size: 17px;
+  font-weight: 600;
+  transition: background 0.25s;
+}
+.finaleBook {
+  background: #f8f4ec;
+  color: var(--deep);
+}
+.finaleBook:hover {
+  background: var(--sand);
+}
+.finaleGhost {
+  border: 1px solid #ffffffb3;
+  color: #fff;
+}
+.finaleGhost:hover {
+  background: #ffffff22;
+}
+.finaleFacts {
+  list-style: none;
+  margin: 48px 0 0;
+  padding: 24px 0 0;
+  border-top: 1px solid #ffffff40;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 40px;
+  font-size: 15px;
+  color: #e7e1d6;
+}
+.finaleFacts li {
+  max-width: 24ch;
+}
+.finaleFacts strong {
+  display: block;
+  color: #fff;
+}
+.finaleNote {
+  margin-top: 24px;
+  font-size: 13px;
+  color: #d9d1c3;
+}
+.finaleCredit {
+  position: absolute;
+  right: 20px;
+  bottom: 14px;
+  font-size: 11px;
+  color: #ffffffb3;
+}
+
+/* ---------- Scroll-linked motion (progressive enhancement) ---------- */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .storyTall {
+      animation: driftUp linear both;
+      animation-timeline: view();
+    }
+    .storySmall {
+      animation: driftDown linear both;
+      animation-timeline: view();
+    }
+    .spotlightPhoto img {
+      animation: zoomOut linear both;
+      animation-timeline: view();
+    }
+    /* The finale opens out of an arch as the visitor arrives. */
+    .finaleMedia {
+      animation: archOpen linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 45%;
+    }
+    .finaleCopy {
+      animation: lift linear both;
+      animation-timeline: view();
+      animation-range: entry 30% cover 50%;
+    }
+    @keyframes driftUp {
+      from {
+        transform: translateY(60px);
+      }
+      to {
+        transform: translateY(-60px);
+      }
+    }
+    @keyframes driftDown {
+      from {
+        transform: translateY(-40px);
+      }
+      to {
+        transform: translateY(70px);
+      }
+    }
+    @keyframes zoomOut {
+      from {
+        transform: scale(1.15);
+      }
+      to {
+        transform: scale(1);
+      }
+    }
+    @keyframes archOpen {
+      from {
+        clip-path: inset(14% 24% 0 24% round 999px 999px 0 0);
+      }
+      to {
+        clip-path: inset(0 0 0 0 round 0);
+      }
+    }
+  }
+}
+@supports not (animation-timeline: view()) {
+  .finale {
+    height: auto;
+  }
+  .finaleSticky {
+    position: relative;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heroPhoto img,
+  .heroCopy > *,
+  .heroSearch,
+  .roomPanel {
+    animation: none;
+  }
+  .slat,
+  .slat img,
+  .slatName,
+  .expPhoto,
+  .expList li,
+  .horizonPhoto img {
+    transition: none;
+  }
+  .finale {
+    height: auto;
+  }
+  .finaleSticky {
+    position: relative;
+  }
+}
+
+/* ---------- Tablet ---------- */
+@media (max-width: 1100px) {
+  .heroCopy {
+    grid-template-columns: 1fr;
+  }
+  .searchBar {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .searchBar button {
+    grid-column: 1 / -1;
+  }
+  .showcase {
+    grid-template-columns: 1fr;
+  }
+  .horizons {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Phone ---------- */
+@media (max-width: 860px) {
+  .page {
+    font-size: 16px;
+  }
+  .sectionHead {
+    margin-bottom: 36px;
+  }
+  .hero {
+    min-height: calc(100svh - 76px);
+  }
+  .heroCoords {
+    top: 20px;
+    right: 20px;
+    font-size: 11px;
+  }
+  .heroCopy {
+    padding: 96px 20px 104px;
+  }
+  .hero h1 {
+    font-size: clamp(56px, 17vw, 84px);
+  }
+  .heroAside p {
+    font-size: 17px;
+  }
+  .heroActions > a {
+    flex: 1 1 auto;
+    padding: 0 18px;
+  }
+  /* Phones get the dates form in "Plan your stay" instead. */
+  .heroSearch {
+    display: none;
+  }
+  .plan {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    padding: 72px 20px;
+  }
+  .planCard {
+    padding: 20px;
+  }
+  .story {
+    grid-template-columns: 1fr;
+    gap: 64px;
+    padding: 88px 20px 96px;
+  }
+  .storyLead {
+    font-size: 18px;
+  }
+  .principles li:nth-child(n) {
+    margin-left: 0;
+  }
+  .principles strong {
+    font-size: 24px;
+  }
+  .storyArt {
+    min-height: 0;
+    aspect-ratio: 1 / 1.1;
+  }
+  .rooms,
+  .experiencesSection {
+    padding: 88px 20px;
+  }
+  .slats {
+    flex-direction: column;
+    height: auto;
+    min-height: 0;
+    gap: 8px;
+  }
+  .slat {
+    flex: none;
+    height: 96px;
+    border-radius: 48px 48px 0 0;
+    transition: height 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .slat[aria-selected="true"] {
+    flex: none;
+    height: 340px;
+    border-radius: 999px 999px 0 0;
+  }
+  .slatName,
+  .slat[aria-selected="true"] .slatName {
+    left: 24px;
+    bottom: 22px;
+    transform: none;
+    translate: none;
+    font-size: 26px;
+  }
+  .destination {
+    padding: 88px 20px;
+  }
+  .spotlight {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+  .spotlightPhoto {
+    aspect-ratio: 4 / 4.4;
+  }
+  .horizons {
+    margin-top: 72px;
+    gap: 28px;
+  }
+  .horizonScroll {
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 8px;
+  }
+  .horizonList {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 62%;
+  }
+  .horizonList li {
+    scroll-snap-align: start;
+  }
+  .horizonPhoto img {
+    filter: none;
+    opacity: 1;
+  }
+  .experiences {
+    grid-template-columns: 1fr;
+  }
+  .expStage {
+    display: none;
+  }
+  .expList li {
+    grid-template-columns: 1fr;
+    padding: 28px 0;
+  }
+  .expList li[data-active="true"] {
+    padding-left: 0;
+  }
+  .expList li[data-active="true"] h3 {
+    color: inherit;
+    font-style: normal;
+  }
+  .expThumb {
+    display: block;
+    position: relative;
+    aspect-ratio: 16 / 10;
+    margin-bottom: 12px;
+    border-radius: 0 0 0 96px;
+    overflow: hidden;
+  }
+  .expNumber {
+    display: none;
+  }
+  .expMeta {
+    justify-items: start;
+    text-align: left;
+    font-size: 24px;
+  }
+  .finale {
+    height: auto;
+  }
+  .finaleSticky {
+    position: relative;
+    top: 0;
+    height: auto;
+    min-height: 100svh;
+    align-items: end;
+  }
+  .finaleMedia::after {
+    background: linear-gradient(0deg, rgb(8 18 24 / 0.92) 0%, rgb(8 18 24 / 0.6) 55%, rgb(8 18 24 / 0.2) 100%);
+  }
+  .finaleCopy {
+    padding: 120px 20px 64px;
+  }
+  .finaleLead {
+    font-size: 18px;
+  }
+  .finaleActions > * {
+    flex: 1 1 100%;
+  }
+  .finaleFacts {
+    flex-direction: column;
+    gap: 14px;
+  }
+  .finaleFacts li {
+    max-width: none;
+  }
+  .finaleCredit {
+    top: 14px;
+    bottom: auto;
+  }
+}

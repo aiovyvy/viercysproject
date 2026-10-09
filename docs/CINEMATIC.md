@@ -1,6 +1,6 @@
 # Cinematic architecture implementation
 
-The existing photographic hero and horizontal destination gallery remain. ArchitecturalJourney adds a custom scroll-controlled spatial sequence; SuitePreview provides a calm interactive room-category and editorial-photo preview.
+The photographic hero remains. ArchitecturalJourney adds a custom scroll-controlled spatial sequence. (The former SuitePreview was replaced by the homepage RoomsShowcase in Milestone 2.)
 
 ## Desktop spatial sequence
 
@@ -28,14 +28,14 @@ Existing files are temporary editorial stock photographs recorded in README.md, 
 | --- | --- | --- |
 | public/images/santorini.jpg | Opening hero, Santorini gallery and island setting preview | Limestone cliffside retreat in warm natural light with readable blue sea; landscape crop, preferably 2400px wide |
 | public/images/architecture.jpg | Photographic courtyard behind 3D limestone arch; architecture preview | A coherent sunlit courtyard facing the sea, open central horizon and limestone walls; landscape crop, preferably 2400px wide |
-| public/images/suite.jpg | Story-to-suite transition and interior inspiration | Light-filled Santorini suite with limestone, linen and wood; landscape crop, preferably 2200px wide |
+| public/images/santorini/caldera-table.jpg | Final frame of the passage ("Twenty rooms") | Licensed CC BY 2.0 terrace photo (see README); replace with an approved VIERCYS terrace or suite image |
 | public/images/boracay.jpg | Coming-soon Boracay gallery | Tropical shoreline establishing photograph, at least 1600px wide |
 | public/images/amalfi.jpg | Coming-soon Amalfi gallery | Coastal architecture establishing photograph, at least 1600px wide |
 | public/images/bali.jpg | Coming-soon Bali gallery | Quiet tropical architectural/landscape establishing photograph, at least 1600px wide |
 
-Replace photographs at those paths and update descriptive alt text in experience.tsx, destination/property pages, ArchitecturalJourney.tsx and SuitePreview.tsx. The three preview photographs describe inspiration and setting, not category-specific rooms. Actual category galleries require separate approved Essential, Signature and Grand room images.
+Replace photographs at those paths and update descriptive alt text in experience.tsx, destination/property pages, ArchitecturalJourney.tsx and src/lib/rooms-editorial.ts. Homepage and room photographs describe the Santorini setting, not the fictional property. Actual category galleries require separate approved Essential, Signature and Grand room images.
 
-SuitePreview accepts category descriptions, rates, currency, physical-room counts and capacities as props so its displayed information matches persisted inventory. It does not maintain a competing price list or imply availability before a date search.
+The homepage RoomsShowcase reads names, rates, sizes and capacities from CATEGORIES in src/lib/catalog.ts, so it never keeps a competing price list or implies availability before a date search.
 
 ## Verification
 

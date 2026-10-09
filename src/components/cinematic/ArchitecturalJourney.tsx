@@ -186,10 +186,11 @@ export default function ArchitecturalJourney() {
         </div>
         <div className={styles.suitePhoto} data-suite>
           <Image
-            src="/images/suite.jpg"
+            src="/images/santorini/caldera-table.jpg"
             fill
             sizes="100vw"
-            alt="A light-filled suite with warm natural materials and generous seating"
+            alt="A table for two on a terrace above the caldera at dusk"
+            style={{ objectPosition: "50% 62%" }}
           />
         </div>
         <div className={styles.suiteCopy} data-suite-copy>

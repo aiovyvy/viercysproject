@@ -65,14 +65,20 @@ test("homepage calls to action use one consistent vocabulary", async ({
   page,
 }) => {
   await page.goto("/");
-  await expect(page.locator(".closing-cta")).toHaveText("Book a stay");
-  await expect(page.locator(".closing-cta")).toHaveAttribute("href", "/book");
+  const closing = page.locator("#closing").getByRole("link", {
+    name: "Book a stay",
+    exact: true,
+  });
+  await expect(closing).toHaveText("Book a stay");
+  await expect(closing).toHaveAttribute("href", "/book");
   await expect(
     page.getByRole("link", { name: /See rooms and prices/ }),
   ).toBeVisible();
   await expect(page.getByText("Begin your escape")).toHaveCount(0);
   await expect(page.getByText("Check availability")).toHaveCount(0);
-  const hint = await page.locator(".gallery-hint").boundingBox();
+  const hint = await page
+    .getByRole("link", { name: /View all destinations/ })
+    .boundingBox();
   expect(hint!.height).toBeGreaterThanOrEqual(44);
 });
 

@@ -6,8 +6,11 @@ import { usePathname } from "next/navigation";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { photos } from "./data";
-import SuitePreview from "@/components/cinematic/SuitePreview";
-import { CATEGORIES, CURRENCY } from "@/lib/catalog";
+import { StaySearch } from "@/components/home/StaySearch";
+import { RoomsShowcase } from "@/components/home/RoomsShowcase";
+import { Experiences } from "@/components/home/Experiences";
+import { FinalInvitation } from "@/components/home/FinalInvitation";
+import home from "@/components/home/home.module.css";
 import ArchitecturalJourney from "@/components/cinematic/ArchitecturalJourney";
 
 export function Photo({
@@ -138,23 +141,23 @@ export default function Home() {
       const ctx = gsap.context(() => {
         // Exterior approach: the photo recedes and the copy lifts as the
         // visitor scrolls toward the arch passage.
-        gsap.to(".hero-photo", {
-          yPercent: 18,
-          scale: 1.08,
+        gsap.to("[data-hero-photo]", {
+          yPercent: 14,
+          scale: 1.06,
           ease: "none",
           scrollTrigger: {
-            trigger: ".hero",
+            trigger: "[data-hero]",
             start: "top top",
             end: "bottom top",
             scrub: true,
           },
         });
-        gsap.to(".hero-copy", {
-          yPercent: -25,
-          opacity: 0.2,
+        gsap.to("[data-hero-copy]", {
+          yPercent: -18,
+          opacity: 0.15,
           ease: "none",
           scrollTrigger: {
-            trigger: ".hero",
+            trigger: "[data-hero]",
             start: "top top",
             end: "bottom top",
             scrub: true,
@@ -163,227 +166,285 @@ export default function Home() {
       }, root);
       return () => ctx.revert();
     });
-    mm.add(
-      "(min-width: 900px) and (pointer: fine) and (prefers-reduced-motion: no-preference)",
-      () => {
-        const gallery = root.current?.querySelector(".destinations");
-        gallery?.classList.add("is-animated");
-        const ctx = gsap.context(() => {
-          const travel = gsap.to(".destination-track", {
-            x: () =>
-              -Math.max(
-                0,
-                (document.querySelector(".destination-track") as HTMLElement)
-                  .scrollWidth -
-                  window.innerWidth +
-                  96,
-              ),
-            ease: "none",
-            scrollTrigger: {
-              trigger: ".destinations",
-              start: "top top",
-              end: "+=1200",
-              scrub: 1,
-              pin: true,
-              invalidateOnRefresh: true,
-            },
-          });
-          gsap.utils
-            .toArray<HTMLElement>(".destination-image")
-            .forEach((photo) => {
-              const image = photo.querySelector("img");
-              if (image)
-                gsap.fromTo(
-                  image,
-                  { xPercent: 7, scale: 1.16 },
-                  {
-                    xPercent: -7,
-                    ease: "none",
-                    scrollTrigger: {
-                      trigger: photo,
-                      containerAnimation: travel,
-                      start: "left right",
-                      end: "right left",
-                      scrub: true,
-                    },
-                  },
-                );
-            });
-        }, root);
-        return () => {
-          ctx.revert();
-          gallery?.classList.remove("is-animated");
-        };
-      },
-    );
     return () => mm.revert();
   }, []);
   return (
     <div ref={root}>
       <Navigation />
-      <main id="main">
-        <section className="hero">
-          <div className="hero-photo">
+      <main id="main" className={home.page}>
+        <section className={home.hero} data-hero aria-labelledby="hero-title">
+          <div className={home.heroPhoto} data-hero-photo>
             <Photo
               src={photos.hero}
-              alt="Sunlit white architecture overlooking the blue Santorini caldera"
+              alt="Sunlit white architecture and blue domes above the Santorini caldera"
               priority
             />
           </div>
-          <div className="hero-shade" />
-          <div className="hero-top">
-            <span>AN AEGEAN STATE OF MIND</span>
-            <span>SANTORINI · GREECE</span>
-          </div>
-          <div className="hero-copy">
-            <p className="eyebrow">THE ART OF BEING HERE</p>
-            <h1>
+          <div className={home.heroShade} />
+          <p className={home.heroCoords} aria-hidden="true">
+            36°27′ N · 25°22′ E
+          </p>
+          <div className={home.heroCopy} data-hero-copy>
+            <p className={home.kicker}>VIERCYS Santorini · Greece</p>
+            <h1 id="hero-title">
               Where Earth
               <br />
               Meets <em>the Sea.</em>
             </h1>
-            <div className="hero-bottom">
-              <div>
-                <BookLink className="hero-book" />
-                <p>
-                  A quieter world. A deeper blue.
-                  <br />A place to return to yourself.
-                </p>
+            <div className={home.heroAside}>
+              <p>
+                A limestone retreat above the Aegean, made for slow mornings,
+                long horizons and evenings that end in gold.
+              </p>
+              <div className={home.heroActions}>
+                <BookLink className={`hero-book ${home.primaryLight}`} />
+                <a href="#rooms" className={home.ghostLight}>
+                  Explore rooms &amp; suites
+                </a>
               </div>
-              <a href="#story" className="discover">
-                SCROLL TO DISCOVER <span>↓</span>
-              </a>
             </div>
           </div>
-          <span className="hero-number">36°27′ N &nbsp; 25°22′ E</span>
+          <div className={home.heroSearch}>
+            <StaySearch variant="bar" idPrefix="hero" />
+          </div>
         </section>
+
         <ArchitecturalJourney />
-        <section id="reservation" className="reservation">
-          <div className="reservation-heading">
-            <p className="eyebrow">YOUR NEXT CHAPTER</p>
-            <p>
-              You book the stay. <em>We curate the experience.</em>
+
+        <section
+          id="reservation"
+          className={home.plan}
+          aria-labelledby="plan-title"
+        >
+          <div className={home.planIntro}>
+            <p className={home.kicker}>Plan your stay</p>
+            <h2 id="plan-title">
+              Three steps to <em>the Aegean.</em>
+            </h2>
+            <ol className={home.steps} aria-label="How booking works">
+              <li>
+                <strong>Choose your dates</strong>
+                <span>Three nights are suggested. Stay up to thirty.</span>
+              </li>
+              <li>
+                <strong>Pick your room</strong>
+                <span>See who it sleeps and its exact price.</span>
+              </li>
+              <li>
+                <strong>Confirm and relax</strong>
+                <span>Review the total, confirm, then manage your stay.</span>
+              </li>
+            </ol>
+            <p className={home.planHelp}>
+              First time here? <BookLink className={home.inlineLink} /> opens a
+              guided booking with a short walkthrough.
             </p>
           </div>
-          <ol className="booking-steps" aria-label="How booking works">
-            <li>
-              <strong>1. Choose your dates</strong>
-              <span>Three nights are suggested; stay longer if you like.</span>
-            </li>
-            <li>
-              <strong>2. Pick a room</strong>
-              <span>See who each room sleeps and its exact price.</span>
-            </li>
-            <li>
-              <strong>3. Confirm</strong>
-              <span>Review the total, confirm, then manage your stay.</span>
-            </li>
-          </ol>
-          <BookLink className="reservation-cta" />
-          <p className="demo-note">
-            VIERCYS is a fictional hotel for a classroom demonstration. Prices
-            and payments are simulated.
-          </p>
+          <div className={home.planCard}>
+            <StaySearch variant="card" idPrefix="plan" />
+            <p className={home.planNote}>
+              Invited guests redeem their complimentary nights when they
+              confirm. VIERCYS is a fictional hotel for a classroom project;
+              prices and payments are simulated.
+            </p>
+          </div>
         </section>
-        <section id="story" className="intro">
-          <p className="eyebrow">
-            THE VIERCYS PHILOSOPHY <span>01 /</span>
-          </p>
-          <div>
-            <h2>
+
+        <section
+          id="story"
+          className={home.story}
+          aria-labelledby="story-title"
+        >
+          <div className={home.storyCopy}>
+            <p className={home.kicker}>The VIERCYS philosophy</p>
+            <h2 id="story-title">
               Some places are visited.
               <br />
               Others are <em>felt.</em>
             </h2>
-            <div className="intro-bottom">
-              <span className="sun-symbol" aria-hidden="true">
-                ✳
-              </span>
-              <p>
-                Carved from limestone. Softened by sunlight. Open to the endless
-                Aegean. We believe true luxury is the space to slow down — and
-                the freedom to feel completely somewhere else.
-              </p>
-            </div>
-          </div>
-        </section>
-        <SuitePreview
-          categories={CATEGORIES.map((category) => ({
-            id: category.id,
-            name: category.name,
-            description: category.description,
-            capacity: category.capacity,
-            inventory: category.inventory,
-            nightlyRate: category.rate / 100,
-            currency: CURRENCY,
-            amenities: [...category.amenities],
-          }))}
-        />
-        <section id="destinations" className="destinations">
-          <div className="destination-heading">
-            <div>
-              <p className="eyebrow">ONE PHILOSOPHY. NEW HORIZONS.</p>
-              <h2>
-                The world, <em>at our pace.</em>
-              </h2>
-            </div>
-            <Link href="/destinations" className="gallery-hint">
-              VIEW ALL DESTINATIONS ↗
+            <p className={home.storyLead}>
+              Carved from limestone. Softened by sunlight. Open to the endless
+              Aegean. We believe true luxury is the space to slow down, and the
+              freedom to feel completely somewhere else.
+            </p>
+            <ol className={home.principles}>
+              <li>
+                <span aria-hidden="true">I</span>
+                <p>
+                  <strong>Shaped by the island</strong>
+                  Thick walls, deep shade and arches that frame the sea, the way
+                  Cycladic houses have always been built.
+                </p>
+              </li>
+              <li>
+                <span aria-hidden="true">II</span>
+                <p>
+                  <strong>Slow by design</strong>
+                  Twenty rooms, no crowds, and days without a timetable.
+                </p>
+              </li>
+              <li>
+                <span aria-hidden="true">III</span>
+                <p>
+                  <strong>Personal by choice</strong>
+                  Thoughtful hospitality that notices, and then gives you room.
+                </p>
+              </li>
+            </ol>
+            <Link href="/about" className={home.textLink}>
+              Read the VIERCYS story <span aria-hidden="true">→</span>
             </Link>
           </div>
-          <div className="destination-track">
-            {[
-              {
-                name: "Santorini",
-                country: "GREECE",
-                photo: photos.hero,
-                live: true,
-              },
-              {
-                name: "Boracay",
-                country: "PHILIPPINES",
-                photo: photos.boracay,
-              },
-              { name: "Amalfi", country: "ITALY", photo: photos.amalfi },
-              { name: "Bali", country: "INDONESIA", photo: photos.bali },
-            ].map((d, i) => (
-              <article className="destination" key={d.name}>
-                <div className="destination-image">
-                  <Photo
-                    src={d.photo}
-                    alt={`${d.name} destination landscape`}
-                  />
-                  <span className="destination-status">
-                    {d.live ? "OUR FIRST ADDRESS" : "COMING SOON"}
-                  </span>
-                </div>
-                <div className="destination-meta">
-                  <span>
-                    0{i + 1} / {d.country}
-                  </span>
-                  {d.live ? (
-                    <Link href="/santorini">
-                      <h3>
-                        {d.name} <span>↗</span>
-                      </h3>
-                    </Link>
-                  ) : (
-                    <h3>{d.name}</h3>
-                  )}
-                </div>
-              </article>
-            ))}
+          <div className={home.storyArt} aria-hidden="true">
+            <div className={home.storyTall}>
+              <Image
+                src="/images/santorini/white-stair.jpg"
+                alt=""
+                fill
+                sizes="(max-width: 860px) 70vw, 30vw"
+              />
+            </div>
+            <div className={home.storySmall}>
+              <Image
+                src="/images/santorini/stone-door.jpg"
+                alt=""
+                fill
+                sizes="(max-width: 860px) 45vw, 18vw"
+              />
+            </div>
+            <p className={home.storyCaption}>
+              Lime, stone and light · Santorini
+            </p>
           </div>
         </section>
-        <section className="closing">
-          <p className="eyebrow">THE SEA IS CALLING</p>
-          <h2>
-            Make room
-            <br />
-            for <em>something beautiful.</em>
-          </h2>
-          <BookLink className="closing-cta" />
+
+        <section
+          id="rooms"
+          className={home.rooms}
+          aria-labelledby="rooms-title"
+        >
+          <header className={home.sectionHead}>
+            <p className={home.kicker}>Rooms &amp; suites</p>
+            <h2 id="rooms-title">
+              Find your <em>kind of quiet.</em>
+            </h2>
+            <p>
+              Three ways to stay, from an intimate courtyard room to a sanctuary
+              with the whole horizon.
+            </p>
+          </header>
+          <RoomsShowcase />
         </section>
+
+        <section
+          id="destinations"
+          className={home.destination}
+          aria-labelledby="destination-title"
+        >
+          <div className={home.spotlight}>
+            <div className={home.spotlightPhoto}>
+              <Image
+                src="/images/santorini/fira-sunset.jpg"
+                alt="The sun setting over the caldera, seen from Fira"
+                fill
+                sizes="(max-width: 860px) 100vw, 45vw"
+              />
+            </div>
+            <div className={home.spotlightCopy}>
+              <p className={home.kicker}>Our first address · Bookable now</p>
+              <h2 id="destination-title">
+                Santorini, <em>where the sea fills a volcano.</em>
+              </h2>
+              <p>
+                The island curves around a flooded caldera. Whitewashed villages
+                line its rim, and every evening the cliffs turn gold above the
+                water.
+              </p>
+              <dl className={home.spotlightFacts}>
+                <div>
+                  <dt>Island</dt>
+                  <dd>Santorini, Cyclades</dd>
+                </div>
+                <div>
+                  <dt>Sea</dt>
+                  <dd>Aegean</dd>
+                </div>
+                <div>
+                  <dt>Rooms</dt>
+                  <dd>20</dd>
+                </div>
+              </dl>
+              <Link href="/santorini" className={home.primary}>
+                Discover Santorini
+              </Link>
+            </div>
+          </div>
+          <div className={home.horizons}>
+            <div className={home.horizonsHead}>
+              <h3>Next horizons</h3>
+              <p>
+                Future destinations we are dreaming about. They are not open for
+                reservations.
+              </p>
+              <Link href="/destinations" className={home.textLink}>
+                View all destinations <span aria-hidden="true">→</span>
+              </Link>
+            </div>
+            <div
+              className={home.horizonScroll}
+              role="region"
+              aria-label="Future destinations, scrolls sideways on small screens"
+              tabIndex={0}
+            >
+              <ul className={home.horizonList}>
+                {[
+                  {
+                    name: "Boracay",
+                    country: "Philippines",
+                    photo: photos.boracay,
+                  },
+                  { name: "Amalfi", country: "Italy", photo: photos.amalfi },
+                  { name: "Bali", country: "Indonesia", photo: photos.bali },
+                ].map((place) => (
+                  <li key={place.name}>
+                    <div className={home.horizonPhoto}>
+                      <Image
+                        src={place.photo}
+                        alt={`${place.name}, ${place.country}`}
+                        fill
+                        sizes="(max-width: 860px) 60vw, 20vw"
+                      />
+                    </div>
+                    <p>
+                      <strong>{place.name}</strong> {place.country} · Coming
+                      soon
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section
+          id="experiences"
+          className={home.experiencesSection}
+          aria-labelledby="experiences-title"
+        >
+          <header className={home.sectionHead}>
+            <p className={home.kicker}>Experiences</p>
+            <h2 id="experiences-title">
+              The island, <em>at your pace.</em>
+            </h2>
+            <p>
+              Add any of these while you book. Some are confirmed instantly;
+              others are requests our team confirms before your stay.
+            </p>
+          </header>
+          <Experiences />
+        </section>
+
+        <FinalInvitation />
       </main>
       <Footer />
     </div>

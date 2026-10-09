@@ -97,12 +97,11 @@ All images are temporary stock/editorial inspiration, not actual VIERCYS propert
 | --- | --- |
 | public/images/santorini.jpg | https://images.unsplash.com/photo-1613395877344-13d4a8e0d49e |
 | public/images/architecture.jpg | https://images.unsplash.com/photo-1533105079780-92b9be482077 |
-| public/images/suite.jpg | https://images.unsplash.com/photo-1600210492486-724fe5c67fb0 |
 | public/images/boracay.jpg | Laurentiu Morariu: https://unsplash.com/photos/NR-2_RIb62k |
 | public/images/amalfi.jpg | Sylvain Perona: https://unsplash.com/photos/N32Di3LG-t0 |
 | public/images/bali.jpg | https://images.unsplash.com/photo-1537996194471-e657df975ab4 |
 
-Room pages and booking room cards use `public/images/santorini/` (Openverse / Wikimedia Commons). CC BY images must keep their credit, which the room-page lightbox shows on every photo:
+Room pages, booking room cards and most homepage sections use `public/images/santorini/` (Openverse / Wikimedia Commons). CC BY images must keep their credit, which the room-page lightbox shows on every photo:
 
 | Local file | Creator | License | Source |
 | --- | --- | --- | --- |
@@ -118,5 +117,8 @@ Room pages and booking room cards use `public/images/santorini/` (Openverse / Wi
 | santorini/caldera-pool.jpg | rawpixel | CC0 | https://www.rawpixel.com/image/5963329 |
 | santorini/cliff-pools.jpg | rawpixel | CC0 | https://www.rawpixel.com/image/6054528 |
 | santorini/chapel-arch.jpg | rawpixel | CC0 | https://www.rawpixel.com/image/6036805 |
+| santorini/blue-hour.jpg | kuhnmi | CC BY 2.0 | https://commons.wikimedia.org/wiki/File:Blue_Hour_in_Santorini_-_Flickr_-_kuhnmi.jpg |
+| santorini/fira-sunset.jpg | Alexandros | CC BY 3.0 | https://commons.wikimedia.org/wiki/File:Sunset_-_Fira.JPG |
+| santorini/sailing.jpg | rawpixel | CC0 | rawpixel via Openverse ("Yacht sailing sea") |
 
 Review the Unsplash license (https://unsplash.com/license) and replacement rights. The pre-existing Microsoft.Services.Store.winmd is preserved.
