@@ -639,9 +639,10 @@ export async function handler(
               url: `${origin}/invite/${item.token}`,
             })),
             invites: listInvites(),
+            now: Date.now(),
           });
         }
-        return NextResponse.json({ invites: listInvites() });
+        return NextResponse.json({ invites: listInvites(), now: Date.now() });
       }
       if (route === "admin/remove-block" && request.method === "POST") {
         if (staff.role !== "manager")

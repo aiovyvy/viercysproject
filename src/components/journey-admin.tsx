@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { InviteManager } from "./admin-invites";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Shell, useData, api, Feedback } from "./journey";
@@ -136,6 +137,7 @@ export function StaffDashboard() {
             <div className="j-tabs">
               {[
                 "reservations",
+                "invitations",
                 "inventory",
                 "calendar",
                 "guests",
@@ -162,6 +164,9 @@ export function StaffDashboard() {
               Staff sign out
             </button>
           </div>
+          {view === "invitations" && (
+            <InviteManager manager={data.role === "manager"} />
+          )}
           {view === "reservations" && (
             <>
               <div className="j-fields">
@@ -225,6 +230,8 @@ export function StaffDashboard() {
                           {booking.payment_status}
                           <br />
                           {booking.checkin_status}
+                          <br />
+                          {booking.invite_id ? "Demo voucher" : "No voucher"}
                           <br />
                           {money(booking.pricing.total, booking.currency)}
                         </td>

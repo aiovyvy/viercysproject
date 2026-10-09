@@ -345,3 +345,15 @@
     display: block !important;
   }
 }
+.invite-created {
+  list-style: decimal;
+  padding-left: 22px;
+  margin: 16px 0 0;
+}
+.invite-created li {
+  margin: 10px 0;
+  overflow-wrap: anywhere;
+}
+.invite-created code {
+  font-size: 15px;
+}
