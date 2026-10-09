@@ -47,6 +47,18 @@ The previous version of this file reported the voucher, invite route and tutoria
 | Error page had no header or footer | Added | build |
 | Keyboard | A booking can be completed from room choice to confirmation with the keyboard alone | `site.spec.ts` |
 
+### Group 5: polish (done, tested)
+
+| Audit item | Fix | Test |
+| --- | --- | --- |
+| Desktop showed a useless Menu/Close button beside the links | `.nav button { display:flex }` overrode the hidden state; the button is now hidden at 1051px and wider | `polish.spec.ts` (1440 hidden, 1024 shown) |
+| Mobile menu ignored Escape; "Destinations" went to a homepage section | Escape closes it and returns focus to the button; tapping outside closes it; Destinations opens `/destinations`; FAQ added | `polish.spec.ts` |
+| Sticky mobile booking bar sat outside any landmark | Wrapped in `<nav aria-label="Quick booking">` | `polish.spec.ts` |
+| Small tap targets ("View all destinations", concierge summary, admin links, footer) | All at least 44px (concierge rebuilt in group 2, footer and tables in group 4) | `polish.spec.ts`, `site.spec.ts` |
+| Email images and links fell back to `http://localhost:3000` without `APP_URL` | Emails use `APP_URL`, else the address the guest actually used | Unit test (`appBase`); `polish.spec.ts` checks the link in the stored email |
+| The "manage booking" email link worked only once | Links scoped to one booking stay valid for their 7 days and add the booking to the browser's session; email-wide access links are still single use. The email now shows a plain status row instead of `confirmed / demo-paid` | `polish.spec.ts`: the same link opens the booking on two devices |
+| Homepage used "Begin your escape", "Check availability", "Book your stay"… | Closing CTA is the voucher-aware **Book a stay / Claim your 3-night stay**; the room preview says **See rooms and prices** | `polish.spec.ts` |
+
 Test-only: Playwright sets `VIERCYS_DEV_OUTBOX` so access emails that can't be sent are appended to a server-side file the tests read. Nothing reads it over HTTP; leave it unset for classroom use.
 
 ## Verification on 10 October 2026

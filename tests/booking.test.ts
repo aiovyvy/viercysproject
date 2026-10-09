@@ -449,7 +449,9 @@ test("one browser keeps access to every booking it made, and nothing else", asyn
   const second = createBooking(
     make({ arrival, departure: addDays(arrival, 2), roomIds: ["S-102"] }),
   );
-  const one = session(createSession("guest", guestSubject(null, first.reference)))!;
+  const one = session(
+    createSession("guest", guestSubject(null, first.reference)),
+  )!;
   const both = session(
     createSession("guest", guestSubject(one, second.reference)),
   )!;
@@ -459,8 +461,30 @@ test("one browser keeps access to every booking it made, and nothing else", asyn
     listBookings(both).map((booking) => booking.reference),
     [second.reference, first.reference],
   );
-  const stranger = session(createSession("guest", guestSubject(null, "VRC-000000000000")))!;
+  const stranger = session(
+    createSession("guest", guestSubject(null, "VRC-000000000000")),
+  )!;
   assert.throws(() => authorize(first.reference, stranger));
   // A crafted subject cannot smuggle a reference it never booked.
   assert.equal(guestSubject(null, "VRC-AAAAAAAAAAAA").split(",").length, 1);
+});
+test("email links and images follow the address the guest used when APP_URL is unset", async () => {
+  const { appBase } = await import("../src/lib/email");
+  const saved = process.env.APP_URL;
+  try {
+    delete process.env.APP_URL;
+    assert.equal(
+      appBase("http://192.168.1.10:3000"),
+      "http://192.168.1.10:3000",
+    );
+    assert.equal(appBase(), "http://localhost:3000");
+    process.env.APP_URL = "https://viercys.example/";
+    assert.equal(
+      appBase("http://192.168.1.10:3000"),
+      "https://viercys.example",
+    );
+  } finally {
+    if (saved === undefined) delete process.env.APP_URL;
+    else process.env.APP_URL = saved;
+  }
 });

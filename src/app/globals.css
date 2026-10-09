@@ -1448,3 +1448,15 @@ footer .wordmark {
   display: inline-block;
   padding: 4px 0;
 }
+/* QA group 5: `.nav button { display:flex }` above overrode the hidden
+   state, so a useless Menu/Close button showed beside the desktop links. */
+@media (min-width: 1051px) {
+  .nav .menu {
+    display: none;
+  }
+}
+.gallery-hint {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}

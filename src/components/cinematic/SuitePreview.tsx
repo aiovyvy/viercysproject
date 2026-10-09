@@ -146,11 +146,8 @@ export default function SuitePreview({
             Availability depends on your dates. Taxes and optional experiences
             appear in the booking summary.
           </p>
-          <Link
-            href="/book"
-            className={styles.action}
-          >
-            Check availability <span aria-hidden="true">↗</span>
+          <Link href="/book" className={styles.action}>
+            See rooms and prices <span aria-hidden="true">↗</span>
           </Link>
         </div>
       </div>

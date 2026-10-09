@@ -59,12 +59,32 @@ export function Navigation() {
   const [open, setOpen] = useState(false);
   const path = usePathname();
   const inFlow = path.startsWith("/book") || path.startsWith("/invite");
+  const header = useRef<HTMLElement>(null);
+  const toggle = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    // Escape or a tap outside closes the menu; Escape returns focus to it.
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setOpen(false);
+      toggle.current?.focus();
+    };
+    const onPointer = (event: PointerEvent) => {
+      if (!header.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onPointer);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onPointer);
+    };
+  }, [open]);
   return (
     <>
       <a className="skip" href="#main">
         Skip to content
       </a>
-      <header className="nav">
+      <header className="nav" ref={header}>
         <Link href="/" className="wordmark" aria-label="VIERCYS home">
           VIERCYS<span>HOTELS & RESORTS</span>
         </Link>
@@ -75,7 +95,7 @@ export function Navigation() {
           <Link href="/#story" onClick={() => setOpen(false)}>
             Our philosophy
           </Link>
-          <Link href="/#destinations" onClick={() => setOpen(false)}>
+          <Link href="/destinations" onClick={() => setOpen(false)}>
             Destinations
           </Link>
           <Link href="/my-stay" onClick={() => setOpen(false)}>
@@ -84,9 +104,13 @@ export function Navigation() {
           <Link href="/concierge" onClick={() => setOpen(false)}>
             Concierge
           </Link>
+          <Link href="/faq" onClick={() => setOpen(false)}>
+            FAQ
+          </Link>
         </nav>
         {!inFlow && <BookLink className="book" />}
         <button
+          ref={toggle}
           className="menu"
           aria-label={open ? "Close navigation" : "Open navigation"}
           aria-expanded={open}
@@ -95,7 +119,11 @@ export function Navigation() {
           {open ? "Close" : "Menu"}
         </button>
       </header>
-      {!inFlow && <BookLink className="mobile-book-action" />}
+      {!inFlow && (
+        <nav aria-label="Quick booking">
+          <BookLink className="mobile-book-action" />
+        </nav>
+      )}
     </>
   );
 }
@@ -352,9 +380,7 @@ export default function Home() {
             <br />
             for <em>something beautiful.</em>
           </h2>
-          <a className="closing-cta" href="#reservation">
-            Begin your escape <span>↗</span>
-          </a>
+          <BookLink className="closing-cta" />
         </section>
       </main>
       <Footer />

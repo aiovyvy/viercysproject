@@ -262,7 +262,7 @@ export async function handler(
         ...searchFrom(body),
         inviteToken: body.useVoucher === true ? inviteToken || "" : undefined,
       } as BookingInput);
-      await sendEmails(booking.reference);
+      await sendEmails(booking.reference, requestOrigin(request));
       const response = NextResponse.json({
         booking,
         email: emailStatuses(booking.reference),
@@ -299,7 +299,12 @@ export async function handler(
             (await emailHtml(
               booking,
               "confirmation",
-              manageLink(booking.email, booking.reference),
+              manageLink(
+                booking.email,
+                booking.reference,
+                requestOrigin(request),
+              ),
+              requestOrigin(request),
             )),
         );
         return new NextResponse(html, {
@@ -318,7 +323,7 @@ export async function handler(
               "UPDATE email_attempts SET status='queued' WHERE reference=? AND status='demo-preview'",
             )
             .run(reference);
-        await sendEmails(reference);
+        await sendEmails(reference, requestOrigin(request));
         return NextResponse.json({ email: emailStatuses(reference) });
       }
       if (path[2] === "modification-quote" && request.method === "POST") {
@@ -363,12 +368,12 @@ export async function handler(
           { ...searchFrom(body), roomIds: body.roomIds },
           owner,
         );
-        await sendEmails(reference);
+        await sendEmails(reference, requestOrigin(request));
         return NextResponse.json({ booking: updated });
       }
       if (path[2] === "cancel" && request.method === "POST") {
         const updated = cancel(reference, owner, body.confirm === true);
-        await sendEmails(reference);
+        await sendEmails(reference, requestOrigin(request));
         return NextResponse.json({ booking: updated });
       }
       if (path[2] === "check-in" && request.method === "POST") {
@@ -624,23 +629,28 @@ export async function handler(
         throw new Error(
           "This access link is invalid, used or expired. Request a new link.",
         );
-      const result = db()
-        .prepare("UPDATE lookup_tokens SET used=1 WHERE hash=? AND used=0")
-        .run(hash(token));
-      if (Number(result.changes) !== 1)
-        throw new Error("This access link was already used.");
+      // A booking-scoped link (from a confirmation email) opens only that
+      // booking, so it stays usable until it expires. Email-wide access
+      // links are single use.
+      const bookingScoped = String(row.email).startsWith("booking:");
+      if (!bookingScoped) {
+        const result = db()
+          .prepare("UPDATE lookup_tokens SET used=1 WHERE hash=? AND used=0")
+          .run(hash(token));
+        if (Number(result.changes) !== 1)
+          throw new Error("This access link was already used.");
+      }
       const response = NextResponse.json({ verified: true });
       setCookie(
         request,
         response,
         "viercys_guest",
-        createSession(
-          "guest",
-          String(row.email).startsWith("booking:")
-            ? String(row.email).slice(8)
-            : String(row.email),
-          !String(row.email).startsWith("booking:"),
-        ),
+        bookingScoped
+          ? createSession(
+              "guest",
+              guestSubject(guest, String(row.email).slice(8)),
+            )
+          : createSession("guest", String(row.email), true),
       );
       return response;
     }
@@ -864,7 +874,7 @@ export async function handler(
           );
         authorize(String(body.reference), staff);
         queueEmail(String(body.reference), "reminder");
-        await sendEmails(String(body.reference));
+        await sendEmails(String(body.reference), requestOrigin(request));
         return NextResponse.json({ ok: true });
       }
     }
