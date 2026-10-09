@@ -18,6 +18,8 @@ import {
 } from "@/lib/catalog";
 import {
   addDays,
+  cancelOnlineUntil,
+  canCancelOnline,
   dayNumber,
   formatDate,
   nights,
@@ -946,8 +948,20 @@ export function DetailsStep({
         <div className="book-card book-payment">
           <p>
             <strong>Demo payment — nothing is charged.</strong> We never ask for
-            card details. You can cancel online until two days before arrival.
+            card details.
           </p>
+          {canCancelOnline(search.arrival) ? (
+            <p>
+              Free online cancellation until{" "}
+              <strong>{formatDate(cancelOnlineUntil(search.arrival))}</strong>.
+            </p>
+          ) : (
+            <p className="book-short-notice">
+              <strong>Short-notice stay:</strong> online cancellation is not
+              available for arrival on {formatDate(search.arrival)}. To cancel,
+              ask the front desk (<Link href="/contact">Contact</Link>).
+            </p>
+          )}
           <label className="book-check">
             <input name="consent" type="checkbox" required />
             <span>

@@ -60,7 +60,7 @@ export default async function RoomPage({
         </div>
         <div>
           <h2>Sample nightly rate</h2>
-          <p>{money(room.rate)} before 13% tax. All extras are optional.</p>
+          <p>{money(room.rate)} per night, taxes included. All extras are optional.</p>
           <p>
             Online cancellation until two calendar days before arrival. No real
             charges.

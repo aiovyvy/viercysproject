@@ -18,8 +18,9 @@ const {
   authorize,
   emailStatuses,
 } = await import("../src/lib/booking");
+const policy = await import("../src/lib/policy");
 const { validateSearch, propertyToday, addDays, dayNumber, formatDate } =
-  await import("../src/lib/policy");
+  policy;
 const { sendEmails, emailHtml } = await import("../src/lib/email");
 const { createInvites, findInvite, listInvites } =
   await import("../src/lib/invites");
@@ -354,7 +355,11 @@ test("invitations are single-use, expire, and survive modification but not cance
   assert.ok(booking.invite_id);
   // A double-submitted request returns the same booking even once the cookie is gone.
   const [second] = createInvites(1);
-  const retry = make({ ...stay, roomIds: ["S-201"], inviteToken: second.token });
+  const retry = make({
+    ...stay,
+    roomIds: ["S-201"],
+    inviteToken: second.token,
+  });
   const first = createBooking(retry);
   assert.equal(
     createBooking({ ...retry, inviteToken: "" }).reference,
@@ -394,9 +399,8 @@ test("invitations are single-use, expire, and survive modification but not cance
   assert.throws(() => createInvites(61));
 });
 test("throttling counts failures only, per bucket, and can be cleared", async () => {
-  const { throttled, recordFailure, clearFailures } = await import(
-    "../src/lib/db"
-  );
+  const { throttled, recordFailure, clearFailures } =
+    await import("../src/lib/db");
   const device: [string, number] = ["unit-device", 3];
   const shared: [string, number] = ["unit-ip", 100];
   assert.equal(throttled([device, shared]), false);
@@ -405,4 +409,34 @@ test("throttling counts failures only, per bucket, and can be cleared", async ()
   assert.equal(throttled([["other-device", 3], shared]), false);
   clearFailures("unit-device");
   assert.equal(throttled([device]), false);
+});
+test("concierge answers voucher, contact, extend, cancel and tax questions", async () => {
+  const { conciergeReply } = await import("../src/lib/concierge");
+  const cases: [string, RegExp, string][] = [
+    ["How do I use my voucher?", /3 nights in an Essential Room/, "/book"],
+    [
+      "How do I contact the hotel?",
+      /presenter acts as the front desk/,
+      "/contact",
+    ],
+    ["Can I extend my stay?", /Extend stay/, "/my-stay"],
+    ["How do I cancel?", /2 days before arrival/, "/my-stay"],
+    ["Is tax included in the price?", /Rates include taxes/, "/book"],
+    ["Is breakfast included?", /taxes included/, "/book"],
+  ];
+  for (const [question, reply, link] of cases) {
+    const answer = conciergeReply(question);
+    assert.match(answer.reply, reply, question);
+    assert.ok(
+      answer.links.some((item) => item.href === link),
+      question,
+    );
+    assert.doesNotMatch(answer.reply, /13%|plus the displayed tax/);
+  }
+});
+test("online cancellation cutoff is two calendar days before arrival", () => {
+  const { canCancelOnline, cancelOnlineUntil } = policy;
+  assert.equal(cancelOnlineUntil("2026-10-20"), "2026-10-18");
+  assert.equal(canCancelOnline("2026-10-20", "2026-10-18"), true);
+  assert.equal(canCancelOnline("2026-10-20", "2026-10-19"), false);
 });

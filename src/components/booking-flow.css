@@ -818,3 +818,59 @@ fieldset.book-card legend + * {
   background: #f6e9d6;
   border-left-color: #8a5a12;
 }
+.concierge-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 18px;
+}
+.concierge-chips button {
+  min-height: 44px;
+  padding: 8px 16px;
+  font-size: 16px;
+  border: 2px solid var(--blue);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--blue);
+  text-align: left;
+}
+.concierge-answer {
+  border-left: 5px solid var(--olive);
+}
+.book-short-notice {
+  margin-top: 10px;
+  padding: 12px 14px;
+  background: #f6e9d6;
+  border-left: 5px solid #8a5a12;
+}
+.book-short-notice a,
+.book-help a,
+.book-error a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+/* Information pages (Contact, FAQ, Privacy, …) */
+.info-main {
+  max-width: 820px;
+}
+.info-intro {
+  font-size: 19px;
+  line-height: 1.6;
+  margin: 0 0 22px;
+}
+.info-main .book-card p + p {
+  margin-top: 10px;
+}
+.info-list {
+  list-style: disc;
+  padding-left: 22px;
+  margin: 0;
+}
+.info-list li + li {
+  margin-top: 8px;
+}
+.info-main a {
+  color: var(--blue);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

@@ -54,7 +54,7 @@ export default async function Compare({
                   <td key={cat.id}>
                     {
                       [
-                        money(cat.rate) + " before 13% tax",
+                        money(cat.rate) + " per night, taxes included",
                         String(cat.capacity) + " guests",
                         String(cat.size) + " m²",
                         cat.view,

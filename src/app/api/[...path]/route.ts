@@ -40,7 +40,8 @@ import {
   INVITE_COOKIE,
   INVITE_MESSAGES,
 } from "@/lib/invites";
-import { CATEGORIES, EXTRAS, CURRENCY, money } from "@/lib/catalog";
+import { CATEGORIES, EXTRAS, CURRENCY } from "@/lib/catalog";
+import { conciergeReply } from "@/lib/concierge";
 import { searchFrom, propertyToday, nights, VOUCHER } from "@/lib/policy";
 import {
   sendEmails,
@@ -629,17 +630,7 @@ export async function handler(
     }
     if (route === "concierge") {
       const message = String(body.message || "").toLowerCase();
-      const fallbackReply = message.includes("cancel")
-        ? "You can cancel from My VIERCYS until two calendar days before arrival. Cancellation requires your confirmation."
-        : message.includes("transfer")
-          ? `Airport transfer is a confirmed demo extra, ${money(6000, CURRENCY)} per vehicle for up to four guests. Add it at checkout; no real transport is reserved.`
-          : message.includes("breakfast")
-            ? `Breakfast is a demo extra at ${money(2200, CURRENCY)} per guest per morning, plus the displayed tax.`
-            : message.includes("check")
-              ? "Your itinerary and reservation are in My VIERCYS. Check-in and check-out are demo operational actions; contact staff in the app."
-              : message.includes("room")
-                ? "Essential Rooms fit two guests, Signature Suites three, and Grand Sanctuaries four. Search availability to allocate several rooms."
-                : "Discover sunset viewpoints, village walks and Mediterranean dining ideas. These are suggestions: verify local access, hours and costs. I can guide you to booking and My VIERCYS, but I cannot change reservations or charge you.";
+      const fallback = conciergeReply(message);
       const aiReply = await answerConcierge(message, {
         categories: CATEGORIES,
         extras: EXTRAS,
@@ -648,17 +639,15 @@ export async function handler(
           maxNights: 30,
           horizonDays: 730,
           cancellation: "two calendar days before arrival",
+          rates: "tax-inclusive",
+          voucher: "up to 3 Essential Room nights for one room, single use",
           payment: "simulated only",
         },
       });
-      const reply = aiReply || fallbackReply;
       return NextResponse.json({
-        reply,
+        reply: aiReply || fallback.reply,
         source: aiReply ? "ai-assisted" : "deterministic-demo",
-        links: [
-          { label: "Book your stay", href: "/book" },
-          { label: "My VIERCYS", href: "/my-stay" },
-        ],
+        links: fallback.links,
       });
     }
     if (route === "admin/login" && request.method === "POST") {

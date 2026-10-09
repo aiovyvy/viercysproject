@@ -7,6 +7,8 @@ import { BookingShell, PriceSummary } from "./booking-flow";
 import type { Booking, Pricing } from "@/lib/booking";
 import {
   addDays,
+  cancelOnlineUntil,
+  canCancelOnline,
   formatDate,
   nights,
   propertyToday,
@@ -466,6 +468,11 @@ export function Stay({
           {error && (
             <div className="book-error" role="alert">
               <p>{error}</p>
+              {/front desk/i.test(error) && (
+                <p>
+                  <Link href="/contact">Contact the front desk</Link>
+                </p>
+              )}
             </div>
           )}
           {preview && (
@@ -646,33 +653,46 @@ export function Stay({
                 <summary className="stay-summary-toggle">
                   Cancel reservation
                 </summary>
-                <p className="book-help">
-                  Online cancellation is available until two days before
-                  arrival. It releases your room and records a simulated refund
-                  {voucher ? ", and your voucher can be used again" : ""}.
-                </p>
-                <label className="book-check">
-                  <input
-                    type="checkbox"
-                    checked={confirmCancel}
-                    onChange={(e) => setConfirmCancel(e.target.checked)}
-                  />
-                  <span>I want to cancel {reference}.</span>
-                </label>
-                <button
-                  className="book-button"
-                  disabled={!confirmCancel || busy}
-                  type="button"
-                  onClick={() =>
-                    action(
-                      "cancel",
-                      { confirm: true },
-                      "Your reservation has been cancelled.",
-                    )
-                  }
-                >
-                  Confirm cancellation
-                </button>
+                {!canCancelOnline(booking.arrival) ? (
+                  <p className="book-help">
+                    Online cancellation was available until{" "}
+                    {formatDate(cancelOnlineUntil(booking.arrival))}. To cancel
+                    now, ask the front desk (
+                    <Link href="/contact">Contact</Link>).
+                  </p>
+                ) : (
+                  <>
+                    <p className="book-help">
+                      Free online cancellation until{" "}
+                      {formatDate(cancelOnlineUntil(booking.arrival))}.
+                      Cancelling releases your room and records a simulated
+                      refund
+                      {voucher ? ", and your voucher can be used again" : ""}.
+                    </p>
+                    <label className="book-check">
+                      <input
+                        type="checkbox"
+                        checked={confirmCancel}
+                        onChange={(e) => setConfirmCancel(e.target.checked)}
+                      />
+                      <span>I want to cancel {reference}.</span>
+                    </label>
+                    <button
+                      className="book-button"
+                      disabled={!confirmCancel || busy}
+                      type="button"
+                      onClick={() =>
+                        action(
+                          "cancel",
+                          { confirm: true },
+                          "Your reservation has been cancelled.",
+                        )
+                      }
+                    >
+                      Confirm cancellation
+                    </button>
+                  </>
+                )}
               </details>
               {booking.arrival === propertyToday() &&
                 booking.checkin_status === "not-arrived" && (

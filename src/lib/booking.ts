@@ -19,6 +19,10 @@ import {
   propertyToday,
   dayNumber,
   VOUCHER,
+  canCancelOnline,
+  cancelOnlineUntil,
+  formatDate,
+  FRONT_DESK,
   type SearchInput,
 } from "./policy";
 export type Pricing = {
@@ -393,9 +397,7 @@ export function modify(
     );
   assertSearch(input);
   if (auth?.kind !== "admin" && original.arrival <= propertyToday())
-    throw new Error(
-      "Contact staff to modify a stay starting today or earlier.",
-    );
+    throw new Error("Online changes close on the arrival date. " + FRONT_DESK);
   return transaction(() => {
     const current = getBooking(reference)!;
     if (
@@ -464,13 +466,11 @@ export function cancel(
     booking.checkin_status === "checked-in" ||
     booking.checkin_status === "checked-out"
   )
-    throw new Error("Contact staff for an in-progress stay.");
-  if (
-    auth?.kind !== "admin" &&
-    dayNumber(booking.arrival) - dayNumber(propertyToday()) < 2
-  )
+    throw new Error("This stay has already started. " + FRONT_DESK);
+  if (auth?.kind !== "admin" && !canCancelOnline(booking.arrival))
     throw new Error(
-      "Online cancellation closes two calendar days before arrival. Contact staff.",
+      `Online cancellation was available until ${formatDate(cancelOnlineUntil(booking.arrival))}, two days before arrival. ` +
+        FRONT_DESK,
     );
   return transaction(() => {
     const current = getBooking(reference)!;
@@ -479,7 +479,7 @@ export function cancel(
       current.checkin_status === "checked-in" ||
       current.checkin_status === "checked-out"
     )
-      throw new Error("Contact staff for an in-progress stay.");
+      throw new Error("This stay has already started. " + FRONT_DESK);
     db()
       .prepare(
         "UPDATE bookings SET status='cancelled',payment_status='demo-refunded',version=version+1 WHERE reference=?",

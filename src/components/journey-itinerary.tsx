@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
 import { Shell, useData, api, Feedback, GuestLinks } from "./journey";
+import Link from "next/link";
+import { BookingShell } from "./booking-flow";
 import type { Booking } from "@/lib/booking";
 type Day = {
   date: string;
@@ -196,91 +198,117 @@ export function Journey({ reference }: { reference: string }) {
     </Shell>
   );
 }
+const SUGGESTED = [
+  "How do I use my voucher?",
+  "How much does it cost?",
+  "Can I extend my stay?",
+  "How do I cancel?",
+  "How do I contact the hotel?",
+  "Which room fits 3 people?",
+];
 export function Concierge() {
   const [message, setMessage] = useState("");
-  const [reply, setReply] = useState("");
-  const [source, setSource] = useState("");
+  const [answer, setAnswer] = useState<{
+    question: string;
+    reply: string;
+    source: string;
+    links: { label: string; href: string }[];
+  } | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  async function ask(question: string) {
+    if (!question.trim()) return;
+    setBusy(true);
+    setError("");
+    try {
+      const result = await api<{
+        reply: string;
+        source: string;
+        links: { label: string; href: string }[];
+      }>("/api/concierge", { message: question });
+      setAnswer({ question, ...result });
+      setMessage("");
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : "Concierge unavailable.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
   return (
-    <Shell title="VIERCYS Concierge.">
-      <p>
-        Ask about your stay, room capacity, breakfast, transfers or island
-        inspiration. This assistant provides guidance and suggestions; it cannot
-        make bookings, modify reservations or charge you.
+    <BookingShell
+      step={-1}
+      title="Concierge."
+      back={{ href: "/", label: "Home" }}
+    >
+      <p className="book-help">
+        Quick answers about your voucher, prices, dates and rooms. The concierge
+        gives guidance only: it can&rsquo;t book, change or cancel anything for
+        you.
       </p>
+      <div
+        className="concierge-chips"
+        role="group"
+        aria-label="Common questions"
+      >
+        {SUGGESTED.map((question) => (
+          <button
+            key={question}
+            type="button"
+            disabled={busy}
+            onClick={() => ask(question)}
+          >
+            {question}
+          </button>
+        ))}
+      </div>
       <form
-        onSubmit={async (event) => {
+        className="book-card"
+        onSubmit={(event) => {
           event.preventDefault();
-          setBusy(true);
-          setError("");
-          try {
-            const result = await api<{ reply: string; source: string }>(
-              "/api/concierge",
-              { message },
-            );
-            setReply(result.reply);
-            setSource(result.source);
-          } catch (error) {
-            setError(
-              error instanceof Error ? error.message : "Concierge unavailable.",
-            );
-          } finally {
-            setBusy(false);
-          }
+          ask(message);
         }}
       >
-        <label className="j-label">
-          How can we help?
+        <div className="book-field">
+          <label htmlFor="concierge-question">Or ask your own question</label>
           <textarea
-            className="j-input"
+            id="concierge-question"
             maxLength={4000}
             required
             value={message}
             onChange={(e) => setMessage(e.target.value)}
           />
-        </label>
-        <div className="j-actions">
-          <button type="submit" className="j-button" disabled={busy}>
-            {busy ? "Considering your question…" : "Ask concierge"}
-          </button>
         </div>
+        <button type="submit" className="book-button primary" disabled={busy}>
+          {busy ? "Finding an answer…" : "Ask"}
+        </button>
       </form>
-      <Feedback error={error} />
-      {reply && (
-        <section className="j-alert" aria-live="polite">
-          <p>
-            <strong>
-              {source === "ai-assisted"
-                ? "AI-assisted guidance"
-                : "Demo FAQ fallback — no AI response used"}
-            </strong>
+      {error && (
+        <div className="book-error" role="alert">
+          <p>{error}</p>
+        </div>
+      )}
+      {answer && (
+        <section className="book-card concierge-answer" aria-live="polite">
+          <p className="book-help">You asked: {answer.question}</p>
+          <p>{answer.reply}</p>
+          {answer.links.length > 0 && (
+            <p className="book-change-links">
+              {answer.links.map((link) => (
+                <Link key={link.href} href={link.href}>
+                  {link.label}
+                </Link>
+              ))}
+            </p>
+          )}
+          <p className="book-help">
+            {answer.source === "ai-assisted"
+              ? "AI-assisted answer. Check details on your booking page."
+              : "Answer from the VIERCYS FAQ."}
           </p>
-          <p>{reply}</p>
         </section>
       )}
-      <div className="journey-links">
-        <a href="/book">Book your stay</a>
-        <a href="/my-stay">My VIERCYS</a>
-      </div>
-      <details className="j-panel">
-        <summary>Quick hotel guidance</summary>
-        <p>
-          Essential Rooms accommodate 2 guests, Signature Suites 3, Grand
-          Sanctuaries 4. All children count toward occupancy. Multiple rooms
-          need at least one adult each.
-        </p>
-        <p>
-          Stays range from 1 to 30 nights, within the next 24 months.
-          Cancellation is available online until two calendar days before
-          arrival.
-        </p>
-        <p>
-          Sample nightly rates and all extras are for a fictional concept.
-          Payments are simulated. Sailing, dinner and spa requests require
-          approval and are not booked activities.
-        </p>
-      </details>
-    </Shell>
+    </BookingShell>
   );
 }

@@ -43,6 +43,16 @@ export function addDays(iso: string, days: number) {
 export function nights(input: SearchInput) {
   return dayNumber(input.departure) - dayNumber(input.arrival);
 }
+// Online cancellation closes two calendar days before arrival (property time).
+export const CANCEL_DAYS_BEFORE = 2;
+export function cancelOnlineUntil(arrival: string) {
+  return addDays(arrival, -CANCEL_DAYS_BEFORE);
+}
+export function canCancelOnline(arrival: string, today = propertyToday()) {
+  return dayNumber(arrival) - dayNumber(today) >= CANCEL_DAYS_BEFORE;
+}
+export const FRONT_DESK =
+  "Ask the front desk: during the classroom demo, that is the presenter (see Contact).";
 export function validateSearch(
   input: SearchInput,
   today = propertyToday(),

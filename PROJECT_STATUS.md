@@ -15,6 +15,15 @@ The previous version of this file reported the voucher, invite route and tutoria
 | H1: losing a voucher race (or an expiry mid-checkout) left the student on a €0 page where every retry failed | The server returns `voucher_unavailable` (409) and clears the dead voucher cookie. The page explains why, re-prices at the standard rate, says nothing was booked or charged, and requires a fresh confirmation; the button now shows the amount. An unusable voucher is also explained on every booking step | `security.spec.ts`: two phones redeem one voucher at once; exactly one wins; the other sees €540.00 and is booked only after confirming that amount |
 | H4: a booking link opened in another browser was a dead end | "Your booking is private" card with **Find my booking** (reference prefilled) and **Back to home** | `security.spec.ts` |
 
+### Group 2: pricing and copy accuracy (done, tested)
+
+| Audit item | Fix | Test |
+| --- | --- | --- |
+| H3: "before 13% tax" on `/santorini`, `/rooms/*`, `/compare`; concierge said "plus the displayed tax" | All say "per night, taxes included" | `content.spec.ts` scans those pages and `/faq`; unit test checks concierge replies |
+| M1: checkout promised "cancel online until two days before arrival" even for arrival today/tomorrow; refusals said "Contact staff" with no contact anywhere | Checkout and the booking page show the actual last cancellation date (shared `cancelOnlineUntil` helper). Short-notice stays get a warning before confirming, and the cancel panel offers no button it would refuse. Server refusals name the date and point to the front desk. New `/contact` page explains the presenter is the front desk (no invented real contact details) | `content.spec.ts`: date shown, short-notice warning, no cancel button, Contact link works, server refusal text; unit test for the cutoff |
+| M4: concierge answered "voucher" and "contact" questions with a generic island paragraph | Rules moved to `src/lib/concierge.ts` with answers for voucher, contact, extend, change dates, cancel, prices/tax, breakfast, transfers, rooms, check-in and finding a booking, each with links. Concierge page has tap-to-ask questions and shows the links | Unit test (6 questions); `content.spec.ts` |
+| (link target) | `/faq` added now because Contact and the concierge link to it | `content.spec.ts` |
+
 Test-only: Playwright sets `VIERCYS_DEV_OUTBOX` so access emails that can't be sent are appended to a server-side file the tests read. Nothing reads it over HTTP; leave it unset for classroom use.
 
 ## Verification on 10 October 2026

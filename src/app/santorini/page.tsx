@@ -40,7 +40,7 @@ export default function Santorini() {
                 <br />
                 {room.size} m² · {room.view} · Up to {room.capacity} guests
                 <br />
-                Sample rate {money(room.rate)} per night before 13% tax.
+                {money(room.rate)} per night, taxes included.
               </p>
               <Link className="text-link" href={"/rooms/" + room.id}>
                 Explore this room category ↗
