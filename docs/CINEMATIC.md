@@ -8,11 +8,12 @@ On viewports at least 900px wide with a fine pointer and no reduced-motion prefe
 
 The photograph is a composited background, not a photogrammetric model of an actual building. The geometry represents fictional architectural inspiration; do not describe the images as VIERCYS property photographs.
 
-The booking form sits before this sequence, and the section has a Skip to booking link. No animation controls forms, payments or guest/admin pages.
+The sequence follows the hero directly. Booking stays reachable throughout through the header button, the sticky mobile button and the section's Skip to booking link. No animation controls forms, payments or guest/admin pages.
 
 ## Fallbacks and performance
 
-- Mobile, coarse pointers and reduced motion use a standard vertical layout containing the same story, photographs and room link, without requesting the Three.js scene chunk.
+- Phones, tablets and coarse pointers without a reduced-motion preference get the same pinned, scroll-scrubbed timeline, rendered as a 2.5D colonnade: three CSS arch masks at different depths scale at different rates (`--arch-start`, `--arch-speed`), so nearer arches pass first. The pin is 1.8 viewport heights on narrow screens. The Three.js chunk is never requested.
+- Reduced motion (any screen) uses a static vertical layout with the same story, photographs and room link: no pinning and no canvas.
 - Desktop WebGL failure or context loss retains the photographic composition and a scrubbed spatial 2D arch mask. The React error boundary prevents a canvas failure from removing booking controls.
 - Canvas uses demand rendering: GSAP invalidates a frame when its progress changes. There is no permanent render loop, orbit control, random rotating ornament or scroll-jacking.
 - Device pixel ratio is capped at 1.5; geometry is reused, the procedural material map is 128px, and directional shadows use one 1024px map. Renderer-owned GPU resources are disposed on unmount.
@@ -40,7 +41,8 @@ SuitePreview accepts category descriptions, rates, currency, physical-room count
 
 Automated coverage is in tests/cinematic.spec.ts:
 - Desktop loads an actual WebGL canvas in 3D mode, scrubs forward, reverses progress, and retains a direct booking jump without horizontal document overflow.
-- Mobile and reduced-motion contexts retain the vertical narrative and availability CTA and mount no canvas.
+- A 390px touch viewport scrubs the 2.5D passage past 30% progress with no canvas and reaches the rooms link.
+- Reduced motion on phone and desktop has no pin-spacer and no canvas, and the rooms link is visible.
 
 Component ESLint passed during implementation. Global TypeScript/build and browser results are reported by the repository milestone checks; do not treat this document as evidence those checks passed.
 

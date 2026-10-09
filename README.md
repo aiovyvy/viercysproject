@@ -51,17 +51,18 @@ Emails use React Email's renderer with escaped, inline-styled table content and 
 
 | Route | Working behavior |
 | --- | --- |
-| / | Photographic hero, immediate booking form, actual scroll-controlled arch geometry, architectural narrative, suite preview, destination gallery |
+| / | Photographic hero with a Book a stay / Claim your 3-night stay CTA, scroll-driven arch passage (WebGL on desktop, layered 2.5D on phones), suite preview, destination gallery |
+| /invite/[token] | Single-use demo voucher invitation; Claim your stay stores it in an httpOnly cookie |
+| /book → /book/rooms → /book/details | Three-step booking: dates and guests, room cards with server-priced voucher cost, review with itemised price, guest details and optional extras |
 | /destinations; /destinations/boracay; /destinations/amalfi; /destinations/bali | Honest future previews; no pretend inventory or waitlist submission |
 | /santorini | Property, category capacities/rates, policies and booking entry |
-| /availability | Per-date physical inventory, optional finder, filters, sort, selection and price summary |
 | /rooms/essential; /rooms/signature; /rooms/grand; /compare | Editorial galleries, room details and comparison of up to three categories |
-| /checkout | Optional extras, validated guest details, consent and explicit demo confirmation |
-| /booking/[reference] | Protected confirmation/detail, room/date/guest modification with quote, cancellation, email status, optional demo check-in |
+| /availability; /checkout | Redirect to the /book flow for old links |
+| /booking/[reference] | Protected confirmation and manage stay: extend, change dates, change guests/rooms (each previewed before saving), cancel, email status |
 | /booking/[reference]/receipt; /booking/[reference]/email-preview | Print/save PDF and protected branded email preview |
 | /my-stay; /lookup; /profile | Reservation history, expiring single-use access, verified guest profile |
 | /itinerary/[reference]; /concierge | Saved editable daily suggestions and optional AI guidance |
-| /admin | Protected roles, reservations/guests/inventory/calendar/reports and operational controls |
+| /admin | Protected roles; reservations (with voucher state), invitations (create and track links), guests, inventory, calendar, reports |
 
 My VIERCYS has a web app manifest and install icons. Installation support varies by browser. This is an **online-only** companion: private booking data is not cached offline.
 

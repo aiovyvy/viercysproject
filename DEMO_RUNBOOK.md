@@ -1,87 +1,84 @@
 # VIERCYS Demo Runbook
 
-This runbook targets a 3–5 minute classroom or live demo of the fictional VIERCYS Santorini booking flow. It is intentionally paced for a phone-sized browser and avoids relying on real payment or external email delivery.
+A classroom demo of under 5 minutes. Classmates use their own phones to claim a fictional three-night VIERCYS Santorini stay, book it, and see it appear in the staff dashboard. Nothing is paid and no real travel is booked.
 
-## 1) Prepare the local demo
+## 1. Before class (10 minutes, once)
+
+Use a laptop and phones on the **same Wi-Fi network**. Phones reach the laptop by its IP address over plain `http`. This setup is verified to work, and automated tests cover it.
 
 ```powershell
 cd "C:\Users\Kenjo Condez\Downloads\viercys-hotel"
 npm install
-npm run seed
-npm run dev
+ipconfig        # note the Wi-Fi "IPv4 Address", e.g. 192.168.1.10
 ```
 
-Open the app at http://localhost:3000.
+Create `.env.local` (copy `.env.example`) and set at least:
 
-Notes:
-- Use the local SQLite database in `data/viercys.sqlite`.
-- The app shows a demo label and simulated payment flow throughout.
-- Seed data includes exactly 20 rooms and a working admin password in `data/demo-staff.json` when generated.
+```
+VIERCYS_DEMO_MODE=true
+APP_URL=http://192.168.1.10:3000
+```
 
-## 2) Generate a guest invitation
+`APP_URL` is optional: without it, invite links use whatever address the presenter opened `/admin` from. If you open admin at `http://localhost:3000`, the links will say `localhost`, which phones cannot open. Either set `APP_URL` or open admin by the IP address.
 
-From the admin dashboard at `/admin`:
-- Sign in with the generated manager password or `VIERCYS_ADMIN_PASSWORD` if configured.
-- Open the invite manager and create a fresh demo voucher.
-- Copy the public invite link. If you need a simple screen-share flow, open the invite URL directly in the browser.
-
-Recommended demo invitation copy:
-- “You’re invited to VIERCYS.”
-- “Your three-night Santorini escape awaits.”
-- “Complimentary three-night room stay. Extra nights and upgrades are optional and shown before confirmation.”
-
-## 3) Quick classroom flow
-
-1. Open the invite link.
-2. Click “Claim your stay”.
-3. Review the onboarding tutorial if it appears, then continue.
-4. Select three nights in Santorini with two adults.
-5. Choose a suitable room tier and confirm the displayed voucher logic.
-6. Fill in a test guest name and email.
-7. Click “Confirm demo reservation”.
-8. Verify the confirmation page displays the reference, dates, room, voucher savings, and remaining simulated balance.
-9. Open “My Stay” using the confirmation link or staff guest lookup.
-10. In the admin dashboard, confirm that the reservation appears and inventory is reduced accordingly.
-
-## 4) Reset between demos
+Then build, reset and start:
 
 ```powershell
-cd "C:\Users\Kenjo Condez\Downloads\viercys-hotel"
-Remove-Item -Recurse -Force data\viercys.sqlite
-npm run seed
+npm run build
+npm run reset   # empty database: 20 rooms, no bookings, new staff password
+npm run start   # serves on port 3000 on all network interfaces
 ```
 
-This recreates the seeded room catalog and clears demo booking data. Use only for a clean classroom reset.
+The first time, Windows may ask whether Node.js can use the network. Allow it on **Private networks**. On a phone, open `http://192.168.1.10:3000`. If it does not load, see Troubleshooting.
 
-## 5) Fallback when internet or email is unavailable
+## 2. Create invitation links (1 minute)
 
-If outbound email or external services are unavailable:
-- Continue with the on-screen confirmation flow.
-- Use the embedded “Manage Booking” and “My Stay” links.
-- Show the preview email instead of claiming a real sent email.
-- Set the visible status text to “Email not configured for demo” when credentials are absent.
-- Keep the reservation live in the SQLite database so the staff view still works.
+1. Open `http://<laptop-ip>:3000/admin` on the laptop.
+2. Sign in as `manager`. The password is in `data/demo-staff.json`, or is `VIERCYS_ADMIN_PASSWORD` if you set one (12+ characters).
+3. Open the **Invitations** tab. Enter the number of students (1–60), an optional label such as `HCI class`, and click **Create invitation links**.
+4. Click **Copy all links** and paste them into your class chat or LMS. Give **one link per student**: each voucher works for one booking.
 
-## 6) Admin verification
+Links are stored hashed and are shown **only once**. If you lose them, create new ones. To show a link as a QR code, paste it into a QR tool you trust; the app does not generate QR codes.
 
-Open `/admin` and confirm:
-- reservation count
-- guest name and email
-- room assignment and stay dates
-- voucher status and room inventory
-- email status label is not falsely marked as sent unless a real provider accepted it
+## 3. What a participant does (2–4 minutes, no instructions needed)
 
-## 7) Troubleshooting
+1. Open their link → "Your three-night Santorini escape awaits." → **Claim your stay**.
+2. An optional three-step guide appears (Dates → Room → Confirm). **Next**, **Back** or **Skip guide**. It can be replayed with **Show booking guide**.
+3. **Dates:** three nights are preselected a week from today. Change dates, tap **4/5/7 nights**, or adjust guests with −/+. → **See available rooms**.
+4. **Room:** Essential shows "Fully covered by your voucher". Signature and Grand show the exact extra amount. → **Select [room]**.
+5. **Review:** price breakdown with the voucher line. Enter name and email (fake ones are fine), tick the demo checkbox → **Confirm demo reservation**.
+6. **Confirmation:** booking reference, voucher savings and balance. They can try **Extend stay** (shows the extra cost before saving) or **Change dates**.
 
-- If the booking page is blank, restart the Next server and confirm there is no stale dev process.
-- If no rooms appear, re-run `npm run seed` and ensure the property date range is valid for the selected dates.
-- If the admin page asks for a password, check `data/demo-staff.json` or `VIERCYS_ADMIN_PASSWORD`.
-- If the browser is slow, keep the demo to a small viewport and avoid opening multiple heavy tabs.
+## 4. Presenter verification (1 minute)
 
-## 8) Suggested talk track
+In `/admin` → **Reservations**, each new booking shows the guest, dates, room number and "Demo voucher". The **Invitations** tab shows each link as Unused, Expired or "Redeemed · VRC-…". If a student reopens their link, they see "This invitation has been used."
 
-- “This is a fictional premium Mediterranean resort with a real demo booking workflow, not a real hotel or real payment flow.”
-- “The voucher covers up to three complimentary room nights; extras and upgrades are shown before confirmation.”
-- “Inventory checks use real room and date validation, with protected admin access and guest retrieval.”
+Suggested talk track: "VIERCYS is fictional and the payment is simulated. The voucher covers three Essential nights; anything extra is shown before you confirm. Rooms are real database inventory: 20 rooms, and two people cannot book the same room for the same night."
 
-This runbook is intentionally reliable for a classroom environment and does not rely on real airlines, travel services, or external payment providers.
+## 5. Reset between sessions
+
+Stop the server (Ctrl+C) first. Windows locks the database while it runs.
+
+```powershell
+npm run reset
+npm run start
+```
+
+This deletes all bookings and invitations, recreates the 20 rooms and, unless `VIERCYS_ADMIN_PASSWORD` is set, writes a **new** manager password to `data/demo-staff.json`. Generate new invitation links afterwards.
+
+## 6. Fallbacks
+
+- **Email:** with no `RESEND_API_KEY`, nothing is sent. The confirmation page says "Email is not configured for this demo, so nothing was sent" and links to the email that would have been sent. This is expected.
+- **No shared Wi-Fi / phones can't connect:** run the demo on the laptop. Open an invite link in the browser and use DevTools device mode (Ctrl+Shift+M, iPhone) for a phone-sized view. Everything works on `localhost`.
+- **A student books the wrong thing:** they can cancel online until two days before arrival. With the default dates (a week out), the voucher is released and their link works again.
+- **"Choose another room" message:** someone else took the last room of that type for those dates. Pick another room or other dates.
+
+## 7. Troubleshooting
+
+| Symptom | Fix |
+| --- | --- |
+| Phone can't open `http://<ip>:3000` | Same Wi-Fi? Allow Node.js through Windows Firewall (Private). Some campus networks isolate devices; use the laptop fallback |
+| Invite links say `localhost` | Set `APP_URL=http://<laptop-ip>:3000` in `.env.local` and restart the server, or open `/admin` by the IP address |
+| Admin password rejected after a reset | Read `data/demo-staff.json` again; reset writes a new password |
+| `npm run reset` fails with "resource busy" | Stop the server first |
+| Voucher banner missing on `/book` | The link wasn't claimed in this browser, or it was already used. Reopen the student's own link |
