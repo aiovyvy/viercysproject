@@ -7,37 +7,48 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import styles from "./cinematic.module.css";
 const ArchScene = dynamic(() => import("./ArchScene"), { ssr: false });
-const motionQuery =
-  "(min-width: 900px) and (pointer: fine) and (prefers-reduced-motion: no-preference)";
-const subscribe = (listener: () => void) => {
-  const media = window.matchMedia(motionQuery);
-  media.addEventListener("change", listener);
-  return () => media.removeEventListener("change", listener);
-};
-const getSnapshot = () => window.matchMedia(motionQuery).matches;
-const getServerSnapshot = () => false;
-export default function ArchitecturalJourney() {
-  const animated = useSyncExternalStore(
-    subscribe,
-    getSnapshot,
-    getServerSnapshot,
+// Scroll-driven motion runs everywhere unless reduced motion is requested;
+// the WebGL scene is reserved for wide fine-pointer screens. Phones get the
+// layered 2.5D arch passage driven by the same scroll timeline.
+const motionQuery = "(prefers-reduced-motion: no-preference)";
+const webglQuery = "(min-width: 900px) and (pointer: fine)";
+function useMedia(query: string) {
+  return useSyncExternalStore(
+    (listener) => {
+      const media = window.matchMedia(query);
+      media.addEventListener("change", listener);
+      return () => media.removeEventListener("change", listener);
+    },
+    () => window.matchMedia(query).matches,
+    () => false,
   );
+}
+const ARCHES = [
+  { start: 0.42, speed: 2.6, tone: "far" },
+  { start: 0.66, speed: 4.2, tone: "mid" },
+  { start: 1, speed: 6, tone: "near" },
+] as const;
+export default function ArchitecturalJourney() {
+  const animated = useMedia(motionQuery);
+  const webgl = useMedia(webglQuery);
   const root = useRef<HTMLElement>(null);
   const progress = useRef(0);
   const renderFrame = useRef<(() => void) | null>(null);
   const [sceneReady, setSceneReady] = useState(false);
   const [failed, setFailed] = useState(false);
-  const use3d = animated && !failed;
+  const use3d = animated && webgl && !failed;
   useEffect(() => {
     if (!animated || !root.current) return;
     gsap.registerPlugin(ScrollTrigger);
+    ScrollTrigger.config({ ignoreMobileResize: true });
     const context = gsap.context(() => {
       const driver = { position: 0 };
       const timeline = gsap.timeline({
         scrollTrigger: {
           trigger: root.current,
           start: "top top",
-          end: () => "+=" + window.innerHeight * 2.5,
+          end: () =>
+            "+=" + window.innerHeight * (window.innerWidth < 900 ? 1.8 : 2.5),
           pin: true,
           scrub: 0.65,
           invalidateOnRefresh: true,
@@ -125,7 +136,19 @@ export default function ArchitecturalJourney() {
           />
         </div>
         <div className={styles.photoShade} />
-        <div className={styles.portalFallback} aria-hidden="true" />
+        {ARCHES.map((arch) => (
+          <div
+            key={arch.tone}
+            className={`${styles.portalFallback} ${styles[arch.tone]}`}
+            style={
+              {
+                "--arch-start": arch.start,
+                "--arch-speed": arch.speed,
+              } as React.CSSProperties
+            }
+            aria-hidden="true"
+          />
+        ))}
         {use3d && (
           <div className={styles.canvas}>
             <ArchScene

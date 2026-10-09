@@ -28,7 +28,7 @@
   background: rgba(35, 63, 75, 0.9);
   color: #f3eee5;
   padding: 12px;
-  font-size: 13px;
+  font-size: 15px;
   min-height: 44px;
 }
 .views button[aria-pressed="true"] {
@@ -41,7 +41,7 @@
   left: 20px;
   right: 20px;
   color: white;
-  font-size: 12px;
+  font-size: 15px;
   line-height: 1.5;
   background: #233f4be8;
   padding: 8px 12px;
@@ -50,7 +50,7 @@
   align-self: center;
 }
 .kicker {
-  font-size: 13px;
+  font-size: 15px;
   letter-spacing: 0.09em;
   line-height: 1.6;
 }
@@ -100,7 +100,7 @@
   margin: 25px 0;
 }
 .detail dt {
-  font-size: 12px;
+  font-size: 15px;
   margin-bottom: 8px;
 }
 .detail dd {
@@ -115,7 +115,7 @@
   padding-top: 18px;
 }
 .note {
-  font-size: 13px !important;
+  font-size: 15px !important;
   line-height: 1.6 !important;
   margin-top: 16px;
   color: #535f56;

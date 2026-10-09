@@ -104,22 +104,41 @@ export default function Home() {
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
     const mm = gsap.matchMedia();
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
+      const ctx = gsap.context(() => {
+        // Exterior approach: the photo recedes and the copy lifts as the
+        // visitor scrolls toward the arch passage.
+        gsap.to(".hero-photo", {
+          yPercent: 18,
+          scale: 1.08,
+          ease: "none",
+          scrollTrigger: {
+            trigger: ".hero",
+            start: "top top",
+            end: "bottom top",
+            scrub: true,
+          },
+        });
+        gsap.to(".hero-copy", {
+          yPercent: -25,
+          opacity: 0.2,
+          ease: "none",
+          scrollTrigger: {
+            trigger: ".hero",
+            start: "top top",
+            end: "bottom top",
+            scrub: true,
+          },
+        });
+      }, root);
+      return () => ctx.revert();
+    });
     mm.add(
       "(min-width: 900px) and (pointer: fine) and (prefers-reduced-motion: no-preference)",
       () => {
         const gallery = root.current?.querySelector(".destinations");
         gallery?.classList.add("is-animated");
         const ctx = gsap.context(() => {
-          gsap.to(".hero-photo", {
-            yPercent: 22,
-            ease: "none",
-            scrollTrigger: {
-              trigger: ".hero",
-              start: "top top",
-              end: "bottom top",
-              scrub: true,
-            },
-          });
           const travel = gsap.to(".destination-track", {
             x: () =>
               -Math.max(
@@ -208,6 +227,7 @@ export default function Home() {
           </div>
           <span className="hero-number">36°27′ N &nbsp; 25°22′ E</span>
         </section>
+        <ArchitecturalJourney />
         <section id="reservation" className="reservation">
           <div className="reservation-heading">
             <p className="eyebrow">YOUR NEXT CHAPTER</p>
@@ -257,7 +277,6 @@ export default function Home() {
             </div>
           </div>
         </section>
-        <ArchitecturalJourney />
         <SuitePreview
           categories={CATEGORIES.map((category) => ({
             id: category.id,

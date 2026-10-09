@@ -58,9 +58,24 @@
     28% 100%,
     0 100%
   );
-  transform: scale(calc(1 + var(--journey) * 5));
+  /* Each arch starts at its own depth and grows at its own rate, so nearer
+     arches pass the viewer first: a colonnade, not a single zoom. */
+  transform: scale(
+    calc(var(--arch-start, 1) + var(--journey) * var(--arch-speed, 5))
+  );
   transform-origin: 50% 58%;
   pointer-events: none;
+  will-change: transform;
+}
+.far {
+  background: #cdbfa6;
+}
+.mid {
+  background: #dacfbc;
+  box-shadow: inset 0 0 0 1px #c8b99f;
+}
+.near {
+  background: #e9e1d3;
 }
 .journey[data-render-mode="3d"] .portalFallback {
   display: none;
@@ -92,7 +107,7 @@
   max-width: 410px;
 }
 .kicker {
-  font-size: 13px !important;
+  font-size: 15px !important;
   letter-spacing: 0.11em;
   line-height: 1.5;
   text-transform: uppercase;
@@ -146,7 +161,7 @@
   z-index: 4;
   display: flex;
   gap: 30px;
-  font-size: 13px;
+  font-size: 15px;
   color: #fff;
   text-shadow: 0 1px 8px #233f4b;
 }
@@ -179,7 +194,79 @@
 .journey[data-render-mode="3d"] .openingCopy h2 {
   font-size: clamp(42px, 4.5vw, 70px);
 }
-@media (max-width: 899px), (pointer: coarse), (prefers-reduced-motion: reduce) {
+@media (max-width: 899px) and (prefers-reduced-motion: no-preference) {
+  .stage {
+    height: 100svh;
+    min-height: 560px;
+  }
+  .openingCopy,
+  .seaCopy,
+  .suiteCopy {
+    left: 16px;
+    right: 16px;
+    max-width: none;
+  }
+  .openingCopy {
+    top: 16px;
+  }
+  .journey[data-render-mode="2d"] .openingCopy {
+    padding: 18px;
+    max-width: none;
+  }
+  .openingCopy h2,
+  .seaCopy h2,
+  .suiteCopy h2 {
+    font-size: clamp(32px, 9vw, 44px);
+    margin: 10px 0 12px;
+  }
+  .openingCopy > p:last-child,
+  .seaCopy > p:last-child,
+  .suiteCopy > p {
+    font-size: 16px;
+  }
+  .seaCopy {
+    bottom: 22%;
+  }
+  .suiteCopy {
+    top: 12%;
+  }
+  .suitePhoto:after {
+    background: linear-gradient(
+      180deg,
+      rgba(243, 238, 229, 0.96),
+      rgba(243, 238, 229, 0.88) 55%,
+      rgba(243, 238, 229, 0.2)
+    );
+  }
+  /* Clear the fixed 60px mobile booking bar. */
+  .progressLabel {
+    gap: 14px;
+    bottom: 84px;
+    left: 16px;
+    right: 16px;
+    font-size: 14px;
+  }
+  .photoShade {
+    background: linear-gradient(
+      180deg,
+      rgba(12, 33, 38, 0.02) 30%,
+      rgba(12, 33, 38, 0.62)
+    );
+  }
+  .skip {
+    top: auto;
+    bottom: 116px;
+    right: 16px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    font-size: 15px;
+  }
+  .action {
+    min-height: 52px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
   .stage {
     height: auto;
     min-height: 0;

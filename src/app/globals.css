@@ -1311,3 +1311,79 @@ footer small {
     margin-left: auto;
   }
 }
+/* Readability floor (UX rebuild). Earlier rules set captions, navigation
+   and instructions at 6-13px; this block is last so it wins at equal
+   specificity, including over the media-query overrides above. Body text
+   >= 16px, labels and captions >= 14px. */
+body {
+  font-size: 16px;
+}
+.eyebrow,
+.hero-top,
+.hero-number,
+.discover,
+.passage-caption span,
+.photo-label,
+.room-types,
+.gallery-hint,
+.destination-status,
+.destination-meta > span,
+.summary dt,
+.calendar-days > span,
+footer small {
+  font-size: 14px;
+}
+.wordmark span {
+  font-size: 10px;
+}
+.navlinks,
+.book,
+.calendar-open,
+.demo-note,
+footer > div {
+  font-size: 15px;
+}
+.menu,
+.text-link,
+.closing-cta,
+.navlinks.open a {
+  font-size: 16px;
+}
+.hero-bottom p,
+.intro-bottom p,
+.feature-copy > p:not(.eyebrow),
+.category-list p,
+.notice p {
+  font-size: 17px;
+  line-height: 1.6;
+}
+.reservation-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 0 28px;
+  margin: 24px 0 12px;
+  background: var(--blue);
+  color: var(--ivory);
+  font-size: 17px;
+  font-weight: 700;
+}
+.hero-book {
+  font-size: 17px;
+  font-weight: 700;
+  min-height: 52px;
+  display: inline-flex;
+  align-items: center;
+}
+.book {
+  font-weight: 700;
+}
+@media (max-width: 600px) {
+  .reservation-cta {
+    width: 100%;
+  }
+  .mobile-book-action {
+    font-weight: 700;
+  }
+}
