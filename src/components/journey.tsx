@@ -43,9 +43,22 @@ export async function api<T>(
   });
   const result = await response.json();
   if (!response.ok)
-    throw new Error(result.error || "The request could not be completed.");
+    throw new ApiError(
+      result.error || "The request could not be completed.",
+      result.code,
+    );
   return result;
 }
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public code?: string,
+  ) {
+    super(message);
+  }
+}
+/** Lets every voucher banner re-check after the voucher is used or lost. */
+export const VOUCHER_EVENT = "viercys-voucher-changed";
 export function useData<T>(url: string, body?: unknown) {
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState("");

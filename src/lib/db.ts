@@ -172,17 +172,35 @@ export function session(token: string | undefined): Session | null {
       .get(hash(token), Date.now()) as Session | undefined) ?? null
   );
 }
-export function rateLimit(key: string, limit = 10) {
-  const row = db()
-    .prepare("SELECT count,reset FROM rate_limits WHERE key=?")
-    .get(key) as { count: number; reset: number } | undefined;
-  if (!row || row.reset < Date.now()) {
-    db()
-      .prepare("INSERT OR REPLACE INTO rate_limits VALUES(?,?,?)")
-      .run(key, 1, Date.now() + 3600000);
-    return;
-  }
-  if (row.count >= limit)
-    throw new Error("Too many attempts. Try again in one hour.");
-  db().prepare("UPDATE rate_limits SET count=count+1 WHERE key=?").run(key);
+// Failure-only throttling. A classroom shares one campus IP and often no
+// proxy header, so the primary key is an anonymous per-device cookie; IP and
+// per-account buckets are generous backstops. Successful requests never count.
+export const THROTTLE_WINDOW_MS = 15 * 60000;
+export type Bucket = [key: string, limit: number];
+export function throttled(buckets: Bucket[]) {
+  const now = Date.now();
+  const read = db().prepare("SELECT count,reset FROM rate_limits WHERE key=?");
+  return buckets.some(([key, limit]) => {
+    const row = read.get(key) as { count: number; reset: number } | undefined;
+    return !!row && row.reset > now && row.count >= limit;
+  });
 }
+export function recordFailure(buckets: Bucket[]) {
+  const now = Date.now();
+  for (const [key] of buckets) {
+    const row = db()
+      .prepare("SELECT reset FROM rate_limits WHERE key=?")
+      .get(key) as { reset: number } | undefined;
+    if (!row || row.reset <= now)
+      db()
+        .prepare("INSERT OR REPLACE INTO rate_limits VALUES(?,?,?)")
+        .run(key, 1, now + THROTTLE_WINDOW_MS);
+    else
+      db().prepare("UPDATE rate_limits SET count=count+1 WHERE key=?").run(key);
+  }
+}
+export function clearFailures(key: string) {
+  db().prepare("DELETE FROM rate_limits WHERE key=?").run(key);
+}
+export const THROTTLE_MESSAGE =
+  "Too many unsuccessful attempts from this device. Please wait 15 minutes and try again.";

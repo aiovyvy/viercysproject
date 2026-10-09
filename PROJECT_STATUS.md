@@ -4,6 +4,19 @@ Updated **10 October 2026**, branch `ux-rebuild`. Governing brief: [VIERCYS_CODE
 
 The previous version of this file reported the voucher, invite route and tutorial as complete. None of them existed in the code at that time. This version lists only what was checked.
 
+## QA fix log (after the 10 October full-site audit)
+
+### Group 1: security, rate limits, voucher recovery (done, tested)
+
+| Audit item | Fix | Test |
+| --- | --- | --- |
+| C1: `/lookup` showed a working access link to anyone who typed an email, and revealed whether the email had a booking | The link is never returned over HTTP. `/api/lookup` answers identically for known and unknown emails and sends in the background (no timing difference). New primary path: booking reference **and** email must both match; failures get one generic message | `security.spec.ts` (generic error, 403 without match, access with match); `phase2.spec.ts` (identical JSON for known/unknown emails, no token in page) |
+| H2: shared login/claim limits locked out the presenter after ~10 logins and the class after 60 claims | Failure-only throttling with 15-minute windows. Main key is an anonymous per-device cookie (`viercys_device`); per-IP (50 staff / 300 claim / 200 lookup) and per-account (100) caps are backstops. Successful logins and valid invite claims never count | `security.spec.ts`: one device locked after 5 failures, presenter still signs in after 17 failures from 13 devices, 13 successful sign-ins in a row, 70 students claim, token guessing throttled on the 21st try; unit test for the helpers |
+| H1: losing a voucher race (or an expiry mid-checkout) left the student on a €0 page where every retry failed | The server returns `voucher_unavailable` (409) and clears the dead voucher cookie. The page explains why, re-prices at the standard rate, says nothing was booked or charged, and requires a fresh confirmation; the button now shows the amount. An unusable voucher is also explained on every booking step | `security.spec.ts`: two phones redeem one voucher at once; exactly one wins; the other sees €540.00 and is booked only after confirming that amount |
+| H4: a booking link opened in another browser was a dead end | "Your booking is private" card with **Find my booking** (reference prefilled) and **Back to home** | `security.spec.ts` |
+
+Test-only: Playwright sets `VIERCYS_DEV_OUTBOX` so access emails that can't be sent are appended to a server-side file the tests read. Nothing reads it over HTTP; leave it unset for classroom use.
+
 ## Verification on 10 October 2026
 
 | Check | Result |

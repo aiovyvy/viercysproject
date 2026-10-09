@@ -814,3 +814,7 @@ fieldset.book-card legend + * {
     display: none !important;
   }
 }
+.book-voucher.warn {
+  background: #f6e9d6;
+  border-left-color: #8a5a12;
+}

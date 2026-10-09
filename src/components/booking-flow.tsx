@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Navigation, Footer } from "@/app/experience";
-import { useData, api, Feedback } from "./journey";
+import { useData, api, Feedback, ApiError, VOUCHER_EVENT } from "./journey";
 import { Calendar } from "./calendar";
 import "./journey.css";
 import "./booking-flow.css";
@@ -31,6 +31,8 @@ import type { Booking, Pricing, VoucherCredit } from "@/lib/booking";
 
 export type VoucherStatus = {
   state: string;
+  unusable: boolean;
+  message: string | null;
   active: boolean;
   nights: number;
   expires: number | null;
@@ -86,6 +88,11 @@ export function BookingShell({
   children: React.ReactNode;
 }) {
   const voucher = useData<VoucherStatus>("/api/invite");
+  const refreshVoucher = voucher.refresh;
+  useEffect(() => {
+    window.addEventListener(VOUCHER_EVENT, refreshVoucher);
+    return () => window.removeEventListener(VOUCHER_EVENT, refreshVoucher);
+  }, [refreshVoucher]);
   const [guide, setGuide] = useState<number | null>(null);
   useEffect(() => {
     if (step === 0 && !readGuideDone()) queueMicrotask(() => setGuide(0));
@@ -204,6 +211,13 @@ export function BookingShell({
             <strong>Demo voucher applied.</strong> {voucher.data.nights}{" "}
             complimentary Essential Room nights. Extra nights and upgrades are
             optional and always shown before you confirm.
+          </p>
+        )}
+        {voucher.data?.unusable && step >= 0 && step < 3 && (
+          <p className="book-voucher warn" role="note">
+            <strong>Your voucher can&rsquo;t be used.</strong>{" "}
+            {voucher.data.message} Prices on this page are the standard demo
+            rate; nothing is booked or charged until you confirm.
           </p>
         )}
         {children}
@@ -708,6 +722,7 @@ export function DetailsStep({
     "viercys-checkout-" + roomIds.join(",") + "-" + search.arrival;
   const [extras, setExtras] = useState<ExtraSelection[]>([]);
   const [error, setError] = useState("");
+  const [voucherLost, setVoucherLost] = useState("");
   const [busy, setBusy] = useState(false);
   const [requestKey, setRequestKey] = useState("");
   const [quotedPayload, setQuotedPayload] = useState("");
@@ -771,9 +786,19 @@ export function DetailsStep({
       } catch {}
       router.push("/booking/" + result.booking.reference + "?success=1");
     } catch (error) {
-      setError(
-        error instanceof Error ? error.message : "Could not confirm your stay.",
-      );
+      if (error instanceof ApiError && error.code === "voucher_unavailable") {
+        // Never retry with a dead voucher and never charge silently:
+        // re-price at the standard rate and require a fresh confirmation.
+        setVoucherLost(error.message);
+        quote.refresh();
+        window.dispatchEvent(new Event(VOUCHER_EVENT));
+      } else {
+        setError(
+          error instanceof Error
+            ? error.message
+            : "Could not confirm your stay.",
+        );
+      }
       setBusy(false);
       requestAnimationFrame(() => alert.current?.focus());
     }
@@ -932,8 +957,35 @@ export function DetailsStep({
             </span>
           </label>
         </div>
-        {error && (
+        {voucherLost && (
           <div ref={alert} className="book-error" role="alert" tabIndex={-1}>
+            <p>
+              <strong>Your voucher couldn&rsquo;t be applied.</strong>{" "}
+              {voucherLost}
+            </p>
+            <p>
+              Nothing has been booked or charged. The price above is now the
+              standard demo rate
+              {quote.data
+                ? ` (${money(quote.data.pricing.total, quote.data.currency)})`
+                : ""}
+              . To book at that price, tap Confirm again.
+            </p>
+            <p className="book-change-links">
+              <Link href={"/book/rooms?" + searchQuery(search)}>
+                Choose a different room
+              </Link>
+              <Link href="/">Back to home</Link>
+            </p>
+          </div>
+        )}
+        {error && (
+          <div
+            ref={voucherLost ? undefined : alert}
+            className="book-error"
+            role="alert"
+            tabIndex={-1}
+          >
             <p>{error}</p>
             {/room|reserved|available/i.test(error) && (
               <Link href={"/book/rooms?" + searchQuery(search)}>
@@ -953,7 +1005,11 @@ export function DetailsStep({
             type="submit"
             disabled={!ready}
           >
-            {busy ? "Confirming…" : "Confirm demo reservation"}
+            {busy
+              ? "Confirming…"
+              : quote.data && ready
+                ? `Confirm demo reservation · ${money(quote.data.pricing.total, quote.data.currency)}`
+                : "Confirm demo reservation"}
           </button>
         </div>
       </form>

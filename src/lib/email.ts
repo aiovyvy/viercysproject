@@ -1,7 +1,8 @@
 import { createElement } from "react";
 import { render } from "@react-email/render";
 import { randomBytes } from "node:crypto";
-import { db, hash, demoEnabled } from "./db";
+import { appendFileSync } from "node:fs";
+import { db, hash } from "./db";
 import { getBooking, type Booking, type EmailKind } from "./booking";
 import { money } from "./catalog";
 import { formatDate } from "./policy";
@@ -21,9 +22,12 @@ export function lookupToken(email: string) {
     .run(hash(token), email, Date.now() + 7 * 86400000);
   return token;
 }
-export function manageLink(email: string, reference?: string) {
+export function manageLink(email: string, reference?: string, origin?: string) {
   return (
-    (process.env.APP_URL || "http://localhost:3000").replace(/\/$/, "") +
+    (process.env.APP_URL || origin || "http://localhost:3000").replace(
+      /\/$/,
+      "",
+    ) +
     "/lookup?token=" +
     lookupToken(reference ? "booking:" + reference : email)
   );
@@ -139,18 +143,33 @@ export async function sendEmails(reference: string) {
     }
   }
 }
-export async function requestLookup(email: string) {
+export const emailConfigured = () =>
+  !!(process.env.RESEND_API_KEY && process.env.RESEND_FROM);
+// Test-only: with VIERCYS_DEV_OUTBOX set, unsendable emails are appended to
+// that server-side file. Nothing here is ever returned over HTTP.
+function devOutbox(entry: Record<string, string>) {
+  const path = process.env.VIERCYS_DEV_OUTBOX;
+  if (path) appendFileSync(path, JSON.stringify(entry) + "\n");
+}
+/**
+ * Emails a private access link if the address has a booking. Callers must
+ * respond identically either way and must not await delivery, so neither the
+ * response nor its timing reveals whether the email is known.
+ */
+export async function requestLookup(email: string, origin?: string) {
   const bookingRow = db()
     .prepare(
       "SELECT reference FROM bookings WHERE email=? ORDER BY created_at DESC LIMIT 1",
     )
     .get(email);
-  if (!bookingRow) return {};
-  const link = manageLink(email);
-  if (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM)
-    return demoEnabled() ? { demoLink: link, mode: "local-demo-preview" } : {};
+  if (!bookingRow) return;
+  const link = manageLink(email, undefined, origin);
+  if (!emailConfigured()) {
+    devOutbox({ kind: "lookup", to: email, link });
+    return;
+  }
   try {
-    const response = await fetch("https://api.resend.com/emails", {
+    await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         Authorization: "Bearer " + process.env.RESEND_API_KEY,
@@ -164,9 +183,7 @@ export async function requestLookup(email: string) {
       }),
       signal: AbortSignal.timeout(15000),
     });
-    if (!response.ok) throw new Error("Email provider rejected lookup email");
   } catch {
-    throw new Error("We could not send the access email. Please try again.");
+    // Delivery failures are not reported to the requester (no enumeration).
   }
-  return {};
 }

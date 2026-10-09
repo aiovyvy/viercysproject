@@ -204,19 +204,46 @@ export function Stay({
   const latestEmail = result.data?.email[0];
   const voucher = booking?.pricing.voucher;
   const isDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value);
+  // Opened without access on this device (another browser, a shared link):
+  // explain how to get in instead of a bare error.
+  const locked = !booking && !result.loading && !!result.error;
   return (
     <BookingShell
-      step={success ? 3 : -1}
+      step={success && !locked ? 3 : -1}
       title={
-        cancelled
-          ? "Reservation cancelled."
-          : success
-            ? "You're booked."
-            : "Your stay."
+        locked
+          ? "Your booking is private."
+          : cancelled
+            ? "Reservation cancelled."
+            : success
+              ? "You're booked."
+              : "Your stay."
       }
       back={success ? undefined : { href: "/my-stay", label: "My VIERCYS" }}
     >
-      <Feedback error={result.error} loading={result.loading} />
+      {locked ? (
+        <section className="book-card" aria-labelledby="locked-heading">
+          <h2 id="locked-heading">Open it on this device</h2>
+          <p>
+            Bookings open automatically in the browser where they were made.
+            Anywhere else, enter the booking reference and the email used to
+            book.
+          </p>
+          <p className="stay-actions">
+            <Link
+              className="book-button primary"
+              href={"/lookup?reference=" + encodeURIComponent(reference)}
+            >
+              Find my booking
+            </Link>
+            <Link className="book-button" href="/">
+              Back to home
+            </Link>
+          </p>
+        </section>
+      ) : (
+        <Feedback error={result.error} loading={result.loading} />
+      )}
       {booking && (
         <div className="stay">
           <section
@@ -667,11 +694,16 @@ export function Stay({
     </BookingShell>
   );
 }
-export function Lookup({ token }: { token?: string }) {
+export function Lookup({
+  token,
+  reference: initialReference = "",
+}: {
+  token?: string;
+  reference?: string;
+}) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const [demoLink, setDemoLink] = useState("");
   const [busy, setBusy] = useState(false);
   async function verify() {
     setBusy(true);
@@ -683,81 +715,138 @@ export function Lookup({ token }: { token?: string }) {
       setBusy(false);
     }
   }
+  async function findBooking(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    setError("");
+    setMessage("");
+    const values = new FormData(event.currentTarget);
+    try {
+      const result = await api<{ reference: string }>("/api/lookup/reference", {
+        reference: values.get("reference"),
+        email: values.get("email"),
+      });
+      router.push("/booking/" + result.reference);
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : "Could not find the booking.",
+      );
+      setBusy(false);
+    }
+  }
+  async function emailLink(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    setError("");
+    setMessage("");
+    const values = new FormData(event.currentTarget);
+    try {
+      const result = await api<{ message: string }>("/api/lookup", {
+        email: values.get("email"),
+      });
+      setMessage(result.message);
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : "Could not request a link.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
   return (
-    <Shell title="A private way back.">
-      <p>
-        Access is verified by a private, expiring email link. A booking
-        reference alone cannot unlock guest details.
-      </p>
+    <BookingShell
+      step={-1}
+      title={token ? "Open your booking." : "Find your booking."}
+      back={{ href: "/my-stay", label: "My VIERCYS" }}
+    >
       {token ? (
-        <>
-          <p>
-            This private access link grants access to reservations associated
-            with its verified email address.
+        <section className="book-card" aria-labelledby="verify-heading">
+          <h2 id="verify-heading">Private access link</h2>
+          <p className="book-help">
+            This link was sent to the email used for the booking. It opens your
+            reservations on this device.
           </p>
           <button
             type="button"
-            className="j-button"
+            className="book-button primary"
             disabled={busy}
             onClick={verify}
           >
-            {busy ? "Verifying…" : "Verify secure link"}
+            {busy ? "Opening…" : "Open my booking"}
           </button>
-        </>
+        </section>
       ) : (
-        <form
-          onSubmit={async (event) => {
-            event.preventDefault();
-            setBusy(true);
-            setError("");
-            const values = new FormData(event.currentTarget);
-            try {
-              const result = await api<{ message: string; demoLink?: string }>(
-                "/api/lookup",
-                { email: values.get("email") },
-              );
-              setMessage(result.message);
-              setDemoLink(result.demoLink || "");
-            } catch (error) {
-              setError(
-                error instanceof Error
-                  ? error.message
-                  : "Could not request access.",
-              );
-            } finally {
-              setBusy(false);
-            }
-          }}
-        >
-          <div className="j-fields">
-            <label>
-              Email used for booking
-              <input name="email" type="email" autoComplete="email" required />
-            </label>
-          </div>
-          <button className="j-button" disabled={busy}>
-            {busy ? "Requesting access…" : "Request access link"}
-          </button>
-        </form>
+        <>
+          <form className="book-card" onSubmit={findBooking}>
+            <h2>Use your booking reference</h2>
+            <p className="book-help">
+              Your reference is on your confirmation page and email, e.g.
+              VRC-1A2B3C4D5E6F. Both details must match.
+            </p>
+            <div className="book-field">
+              <label htmlFor="lookup-reference">Booking reference</label>
+              <input
+                id="lookup-reference"
+                name="reference"
+                defaultValue={initialReference}
+                autoCapitalize="characters"
+                autoComplete="off"
+                spellCheck={false}
+                required
+                maxLength={20}
+              />
+            </div>
+            <div className="book-field">
+              <label htmlFor="lookup-email">Email used for the booking</label>
+              <input
+                id="lookup-email"
+                name="email"
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                required
+                maxLength={254}
+              />
+            </div>
+            <button className="book-button primary" disabled={busy}>
+              {busy ? "Checking…" : "Find my booking"}
+            </button>
+          </form>
+          <details className="book-card">
+            <summary className="stay-summary-toggle">
+              Forgot your reference? Email me a link
+            </summary>
+            <form onSubmit={emailLink}>
+              <div className="book-field">
+                <label htmlFor="lookup-link-email">Email address</label>
+                <input
+                  id="lookup-link-email"
+                  name="email"
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  required
+                  maxLength={254}
+                />
+              </div>
+              <button className="book-button" disabled={busy}>
+                {busy ? "Sending…" : "Email me a private link"}
+              </button>
+            </form>
+          </details>
+        </>
       )}
-      <Feedback error={error} />
-      {message && <p role="status">{message}</p>}
-      {demoLink && (
-        <div className="j-alert">
-          <strong>LOCAL DEMO ACCESS PREVIEW — no email sent.</strong>
-          <p>
-            This verification shortcut is shown only in explicitly enabled demo
-            mode. Production requires email delivery.
-          </p>
-          <Link
-            className="j-button"
-            href={new URL(demoLink).pathname + new URL(demoLink).search}
-          >
-            Open demo verification link
-          </Link>
+      {error && (
+        <div className="book-error" role="alert">
+          <p>{error}</p>
         </div>
       )}
-    </Shell>
+      {message && (
+        <p className="book-voucher" role="status">
+          {message}
+        </p>
+      )}
+    </BookingShell>
   );
 }
 export function Receipt({ reference }: { reference: string }) {

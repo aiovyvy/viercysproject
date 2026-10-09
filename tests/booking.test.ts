@@ -393,3 +393,16 @@ test("invitations are single-use, expire, and survive modification but not cance
   assert.throws(() => createInvites(0));
   assert.throws(() => createInvites(61));
 });
+test("throttling counts failures only, per bucket, and can be cleared", async () => {
+  const { throttled, recordFailure, clearFailures } = await import(
+    "../src/lib/db"
+  );
+  const device: [string, number] = ["unit-device", 3];
+  const shared: [string, number] = ["unit-ip", 100];
+  assert.equal(throttled([device, shared]), false);
+  for (let i = 0; i < 3; i++) recordFailure([device, shared]);
+  assert.equal(throttled([device]), true);
+  assert.equal(throttled([["other-device", 3], shared]), false);
+  clearFailures("unit-device");
+  assert.equal(throttled([device]), false);
+});

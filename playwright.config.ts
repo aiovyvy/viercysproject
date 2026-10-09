@@ -1,4 +1,4 @@
-﻿import { defineConfig } from "@playwright/test";
+import { defineConfig } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 export default defineConfig({
   testDir: "./tests",
@@ -28,6 +28,8 @@ export default defineConfig({
         "whsec_" +
         Buffer.from("viercys-webhook-test-only-secret!").toString("base64"),
       APP_URL: "http://localhost:3100",
+      // Test-only: unsendable access emails are written here, never served.
+      VIERCYS_DEV_OUTBOX: "test-results/dev-outbox.jsonl",
     },
   },
 });

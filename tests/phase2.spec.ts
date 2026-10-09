@@ -1,7 +1,16 @@
 import { Webhook } from "svix";
 import { test, expect } from "@playwright/test";
 import { randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { propertyToday, addDays } from "../src/lib/policy";
+// Reads the test-only server outbox (VIERCYS_DEV_OUTBOX); never served over HTTP.
+function outboxLink(email: string) {
+  const lines = readFileSync("test-results/dev-outbox.jsonl", "utf8")
+    .trim()
+    .split("\n")
+    .map((line) => JSON.parse(line) as { to: string; link: string });
+  return lines.filter((line) => line.to === email).pop()!.link;
+}
 const skipGuide = () =>
   window.localStorage.setItem("viercys-booking-guide-v1", "done");
 const query = (search: Record<string, string | number>) =>
@@ -145,14 +154,32 @@ test("concurrent requests, duplicate retries and secure guest lookup", async ({
   expect(
     (await stranger.request.get("/api/bookings/" + booking.reference)).status(),
   ).toBe(403);
+  // Asking for a link never reveals it, and the answer is identical for
+  // known and unknown emails.
+  const known = await (
+    await stranger.request.post("/api/lookup", {
+      data: { email: "concurrency@example.test" },
+    })
+  ).json();
+  const unknown = await (
+    await stranger.request.post("/api/lookup", {
+      data: { email: "nobody-booked-this@example.test" },
+    })
+  ).json();
+  expect(known).toEqual(unknown);
+  expect(JSON.stringify(known)).not.toMatch(/token|lookup\?/);
   await page.goto("/lookup");
-  await page
-    .getByLabel("Email used for booking")
-    .fill("concurrency@example.test");
-  await page.getByRole("button", { name: "Request access link" }).click();
-  await page.getByRole("link", { name: "Open demo verification link" }).click();
-  const token = new URL(page.url()).searchParams.get("token")!;
-  await page.getByRole("button", { name: "Verify secure link" }).click();
+  await page.getByText("Forgot your reference? Email me a link").click();
+  await page.getByLabel("Email address").fill("concurrency@example.test");
+  await page.getByRole("button", { name: "Email me a private link" }).click();
+  await expect(page.getByRole("status")).toContainText("Email is not set up");
+  await expect(page.locator("a[href*='token=']")).toHaveCount(0);
+  // The link reaches only the (test) mailbox, then works once.
+  const token = new URL(
+    outboxLink("concurrency@example.test"),
+  ).searchParams.get("token")!;
+  await page.goto("/lookup?token=" + token);
+  await page.getByRole("button", { name: "Open my booking" }).click();
   await expect(page).toHaveURL("/my-stay");
   await expect(
     page.getByRole("heading", { name: booking.reference, exact: true }),
@@ -302,10 +329,8 @@ test("verified profile and staff blocks, calendar, housekeeping and arrival oper
   });
   expect(reservation.ok()).toBeTruthy();
   const { booking } = await reservation.json();
-  const lookup = await (
-    await page.request.post("/api/lookup", { data: { email: booking.email } })
-  ).json();
-  const token = new URL(lookup.demoLink).searchParams.get("token");
+  await page.request.post("/api/lookup", { data: { email: booking.email } });
+  const token = new URL(outboxLink(booking.email)).searchParams.get("token");
   expect(
     (await page.request.post("/api/verify", { data: { token } })).ok(),
   ).toBeTruthy();

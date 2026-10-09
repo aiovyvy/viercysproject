@@ -7,7 +7,11 @@ import {
   session,
   createSession,
   checkPassword,
-  rateLimit,
+  throttled,
+  recordFailure,
+  clearFailures,
+  THROTTLE_MESSAGE,
+  type Bucket,
   hash,
   demoEnabled,
   listRooms,
@@ -38,7 +42,13 @@ import {
 } from "@/lib/invites";
 import { CATEGORIES, EXTRAS, CURRENCY, money } from "@/lib/catalog";
 import { searchFrom, propertyToday, nights, VOUCHER } from "@/lib/policy";
-import { sendEmails, requestLookup, emailHtml, manageLink } from "@/lib/email";
+import {
+  sendEmails,
+  requestLookup,
+  emailHtml,
+  manageLink,
+  emailConfigured,
+} from "@/lib/email";
 export const runtime = "nodejs";
 // The origin the browser actually used. Behind `next start` request.url
 // reports localhost even when a phone connects by LAN IP, so use Host.
@@ -72,10 +82,22 @@ function setCookie(
     path: "/",
   });
 }
+// Best-effort client IP. Campus Wi-Fi often puts a whole class behind one
+// address (or no proxy header at all), so IP buckets are only a backstop.
+function clientIp(request: NextRequest) {
+  return (
+    request.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
+    request.headers.get("x-real-ip") ||
+    "unknown"
+  );
+}
+const DEVICE_COOKIE = "viercys_device";
 export async function handler(
   request: NextRequest,
   context: { params: Promise<{ path: string[] }> },
+  device: string,
 ) {
+  const ip = clientIp(request);
   const { path } = await context.params;
   const route = path.join("/");
   const cookieStore = await cookies();
@@ -158,8 +180,15 @@ export async function handler(
     if (route === "invite" && request.method === "GET")
       return NextResponse.json(voucherStatus(invite));
     if (route === "invite/claim" && request.method === "POST") {
-      rateLimit("invite-" + request.headers.get("x-forwarded-for"), 60);
+      // Valid tokens are 192-bit secrets, so only failed guesses are counted.
+      const buckets: Bucket[] = [
+        ["invite-device-" + device, 20],
+        ["invite-ip-" + ip, 300],
+      ];
+      if (throttled(buckets))
+        return NextResponse.json({ error: THROTTLE_MESSAGE }, { status: 429 });
       const claimed = findInvite(String(body.token || ""));
+      if (claimed.state === "invalid") recordFailure(buckets);
       if (claimed.state !== "valid")
         return NextResponse.json(
           { error: INVITE_MESSAGES[claimed.state], ...voucherStatus(claimed) },
@@ -498,13 +527,63 @@ export async function handler(
         .toLowerCase();
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
         throw new Error("Enter a valid email address.");
-      rateLimit("lookup-" + hash(email), 5);
-      const result = await requestLookup(email);
+      // Throttles sending, counted for every address alike so the response
+      // never differs between known and unknown emails.
+      const buckets: Bucket[] = [
+        ["lookup-email-" + hash(email), 5],
+        ["lookup-device-" + device, 20],
+      ];
+      if (throttled(buckets))
+        return NextResponse.json({ error: THROTTLE_MESSAGE }, { status: 429 });
+      recordFailure(buckets);
+      void requestLookup(email, requestOrigin(request));
       return NextResponse.json({
-        message:
-          "If a reservation exists, an access email will be requested. No account is required.",
-        ...result,
+        message: emailConfigured()
+          ? "If that email has a VIERCYS booking, we have sent it a private access link."
+          : "Email is not set up for this demo, so access links cannot be sent. Use your booking reference instead.",
+        emailEnabled: emailConfigured(),
       });
+    }
+    if (route === "lookup/reference" && request.method === "POST") {
+      const reference = String(body.reference || "")
+        .trim()
+        .toUpperCase()
+        .replace(/^(?!VRC-)/, "VRC-");
+      const email = String(body.email || "")
+        .trim()
+        .toLowerCase();
+      const buckets: Bucket[] = [
+        ["ref-device-" + device, 10],
+        ["ref-ip-" + ip, 200],
+        ["ref-booking-" + hash(reference), 20],
+      ];
+      if (throttled(buckets))
+        return NextResponse.json({ error: THROTTLE_MESSAGE }, { status: 429 });
+      const match = /^VRC-[0-9A-F]{12}$/.test(reference)
+        ? (db()
+            .prepare(
+              "SELECT reference FROM bookings WHERE reference=? AND email=?",
+            )
+            .get(reference, email) as { reference: string } | undefined)
+        : undefined;
+      if (!match) {
+        recordFailure(buckets);
+        return NextResponse.json(
+          {
+            error:
+              "We couldn't find a booking with that reference and email. Check both against your confirmation.",
+          },
+          { status: 400 },
+        );
+      }
+      const response = NextResponse.json({ reference: match.reference });
+      setCookie(
+        request,
+        response,
+        "viercys_guest",
+        createSession("guest", match.reference),
+      );
+      return response;
     }
     if (route === "verify" && request.method === "POST") {
       const token = String(body.token || "");
@@ -591,16 +670,25 @@ export async function handler(
           { error: "Production staff access requires configured credentials." },
           { status: 403 },
         );
-      rateLimit("staff-" + request.headers.get("x-forwarded-for"), 10);
-      const role = checkPassword(
-        String(body.username || ""),
-        String(body.password || ""),
-      );
-      if (!role)
+      const username = String(body.username || "").slice(0, 100);
+      // Failures only: a mistyped password from one device must not lock
+      // the presenter out, and successful sign-ins never count.
+      const buckets: Bucket[] = [
+        ["staff-device-" + device, 5],
+        ["staff-ip-" + ip, 50],
+        ["staff-user-" + hash(username), 100],
+      ];
+      if (throttled(buckets))
+        return NextResponse.json({ error: THROTTLE_MESSAGE }, { status: 429 });
+      const role = checkPassword(username, String(body.password || ""));
+      if (!role) {
+        recordFailure(buckets);
         return NextResponse.json(
           { error: "Invalid staff credentials." },
           { status: 401 },
         );
+      }
+      clearFailures("staff-device-" + device);
       const response = NextResponse.json({ ok: true, role });
       setCookie(
         request,
@@ -770,6 +858,16 @@ export async function handler(
       error instanceof Error
         ? error.message
         : "We could not finish this request.";
+    if (Object.values(INVITE_MESSAGES).includes(message)) {
+      // The voucher can no longer be used: clear it so the next quote is at
+      // the standard price, and let the page explain instead of retrying.
+      const response = NextResponse.json(
+        { error: message, code: "voucher_unavailable" },
+        { status: 409 },
+      );
+      response.cookies.delete(INVITE_COOKIE);
+      return response;
+    }
     return NextResponse.json(
       { error: message },
       {
@@ -788,6 +886,12 @@ function voucherStatus(result: {
 }) {
   return {
     state: result.state,
+    // A voucher cookie exists but can no longer be used (expired/redeemed).
+    unusable: result.state === "expired" || result.state === "redeemed",
+    message:
+      result.state === "expired" || result.state === "redeemed"
+        ? INVITE_MESSAGES[result.state]
+        : null,
     active: result.state === "valid",
     nights: result.invite?.nights ?? VOUCHER.nights,
     expires: result.invite?.expires_at ?? null,
@@ -797,8 +901,21 @@ async function routeHandler(
   request: NextRequest,
   context: { params: Promise<{ path: string[] }> },
 ) {
-  const response = await handler(request, context);
+  const existing = request.cookies.get(DEVICE_COOKIE)?.value;
+  const device =
+    existing && /^[0-9a-f-]{36}$/.test(existing)
+      ? existing
+      : crypto.randomUUID();
+  const response = await handler(request, context, device);
   response.headers.set("Cache-Control", "no-store");
+  if (device !== existing)
+    response.cookies.set(DEVICE_COOKIE, device, {
+      httpOnly: true,
+      secure: secureCookies(request),
+      sameSite: "lax",
+      maxAge: 365 * 86400,
+      path: "/",
+    });
   return response;
 }
 export { routeHandler as GET, routeHandler as POST, routeHandler as PUT };
