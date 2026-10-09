@@ -72,6 +72,10 @@ This deletes all bookings and invitations, recreates the 20 rooms and, unless `V
 - **No shared Wi-Fi / phones can't connect:** run the demo on the laptop. Open an invite link in the browser and use DevTools device mode (Ctrl+Shift+M, iPhone) for a phone-sized view. Everything works on `localhost`.
 - **A student books the wrong thing:** they can cancel online until two days before arrival. With the default dates (a week out), the voucher is released and their link works again.
 - **"Choose another room" message:** someone else took the last room of that type for those dates. Pick another room or other dates.
+- **Two students used the same link:** the second one sees "Your voucher couldn't be applied" and the standard price. Nothing is booked until they confirm again. Give them their own link.
+- **A student opens their booking on another device:** they tap **Find my booking** and enter the booking reference (VRC-…) and their email. There is no "email me a link" shortcut unless email is configured; access links are never shown on screen.
+- **Booking within two days of arrival:** online cancellation is not available (the checkout says so). You, as the front desk, can cancel it from `/admin` → the booking.
+- **Someone mistypes the staff password repeatedly:** only that device is paused for 15 minutes; sign in from your own device as normal.
 
 ## 7. Troubleshooting
 
@@ -82,3 +86,6 @@ This deletes all bookings and invitations, recreates the 20 rooms and, unless `V
 | Admin password rejected after a reset | Read `data/demo-staff.json` again; reset writes a new password |
 | `npm run reset` fails with "resource busy" | Stop the server first |
 | Voucher banner missing on `/book` | The link wasn't claimed in this browser, or it was already used. Reopen the student's own link |
+| "Too many unsuccessful attempts from this device" | Wait 15 minutes or use another device; successful sign-ins and valid invitation links are never limited |
+
+Never set `VIERCYS_DEV_OUTBOX` for a class: it is a test-only setting that writes access emails to a file on the laptop.

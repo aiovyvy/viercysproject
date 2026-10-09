@@ -61,15 +61,27 @@ The previous version of this file reported the voucher, invite route and tutoria
 
 Test-only: Playwright sets `VIERCYS_DEV_OUTBOX` so access emails that can't be sent are appended to a server-side file the tests read. Nothing reads it over HTTP; leave it unset for classroom use.
 
-## Verification on 10 October 2026
+### Fresh end-to-end QA run after all five groups
 
 | Check | Result |
 | --- | --- |
-| `npm run typecheck` | Passed |
-| `npm run lint` | Passed, 0 problems |
-| `npm run build` | Passed |
-| `npm run test:unit` | **14 passed** (10 booking/voucher/invite/email, 4 AI-provider) |
-| `npm run test:e2e` | **20 passed** (Chromium, production build, fresh SQLite, port 3100) |
+| Clean rebuild (`.next-build` deleted), `npm run typecheck`, `npm run lint`, `npm run build` | All passed, 0 lint problems |
+| `npm run test:unit` | **19 passed** (15 booking/voucher/invite/session/email/concierge, 4 AI provider) |
+| `npm run test:e2e` | **42 passed** (Chromium, production build, fresh SQLite): `demo-journey`, `security`, `content`, `deadends`, `site`, `polish`, `phase1`, `phase2`, `cinematic` |
+| Original audit crawler re-run (27 pages + 6 new, phone + desktop = 66 loads) | 35/35 internal links 200; no horizontal overflow; **0 axe violations** (was: contrast, landmark and scrollable-region failures); only intended 403/404 console errors. One new finding, footer/nav words like "FAQ" under 44px wide, fixed and re-tested |
+| Original audit scenarios re-run | Voucher race and mid-checkout expiry recover at the standard price; expired invite explained; extend conflict offers alternatives; Back after booking points to the booking; cancelled booking offers a new stay; date/guest validation unchanged; desktop Menu hidden; Escape closes the menu |
+| Rate limits re-run | 11 wrong staff passwords from different browsers then the right one: 401 ×11, **200** (was 429). 62 claims from 62 browsers: **62 × 200** (was 429 from the 54th) |
+| Access control re-run | Lookup answers identically for known/unknown emails and never contains a link or token; reference + wrong email → generic 400; stranger API access → 403; locked booking page offers Find my booking |
+| Staff | Sign-in, check-in persisted, staff extension preview on a guest booking |
+| LAN journey (`http://192.168.1.10`, emulated iPhone) | Admin creates link with LAN host → claim → guide → 3 nights → €0.00 → confirmed → extended to 5 nights → reused link refused; 0 page errors |
+
+Not performed (unchanged): real phones, Safari/WebKit and Firefox, screen readers (VoiceOver/TalkBack/NVDA), real email delivery, live AI, a moderated usability session.
+
+## Earlier verification (before the QA fixes)
+
+| Check | Result |
+| --- | --- |
+| `npm run test:unit` / `npm run test:e2e` | 14 / 20 passed at that time |
 | Flaky check | Calendar keyboard test was timing-dependent (6/10 failures); fixed with a polled assertion, then 15/15 passes |
 | Manual LAN run | Full invite → booking journey from an emulated phone over `http://192.168.1.10` against `next start` |
 
@@ -85,8 +97,8 @@ Legend: **Tested** = covered by an automated test listed above. **Implemented** 
 | Invitation route `/invite/[token]` with honest demo copy | Tested | Brief's copy plus "Classroom demo · not a real travel prize" |
 | Admin-only invite generation, opaque hashed tokens, expiry, single use | Tested | 192-bit tokens stored as SHA-256. Anonymous generation returns 401. Redemption is a conditional UPDATE inside the booking transaction |
 | Unique links per participant; forwarded/reused link handled | Tested | Batch of 1–60 links. Reused link → "This invitation has been used." Unknown → explains and offers booking without a voucher |
-| Voucher concurrency (two simultaneous redemptions) | Implemented | `BEGIN IMMEDIATE` plus conditional UPDATE. Unit tests are sequential; there is no simultaneous-request voucher test (the room-overlap concurrency test does exist) |
-| Expired voucher | Tested (unit) | Not exercised in the browser |
+| Voucher concurrency (two simultaneous redemptions) | Tested | `security.spec.ts`: two phones confirm the same voucher at once; exactly one wins, the other is re-priced and must confirm again |
+| Expired voucher | Tested | Unit test, plus the audit script (expired link page; expiry between claim and confirm recovers at the standard price) |
 | Exactly 20 rooms (10/6/4), operational state separate from bookings | Tested | Unchanged from the earlier build |
 | Date validation: past, order, 222222 year, impossible dates, 24-month horizon, Athens calendar | Tested | Client and server. Fixed a crash when an impossible date was typed into the URL |
 | Voucher pricing rule (3 Essential nights, upgrade on every night, extra nights at rate, unused nights no value) | Tested | 1/2/3/4/5 nights on Essential and Signature. Multi-room: voucher on one room only |
@@ -99,7 +111,10 @@ Legend: **Tested** = covered by an automated test listed above. **Implemented** 
 | Staff admin sees booking and voucher state | Tested | Reservations show "Demo voucher"; Invitations tab shows "Redeemed · VRC-…" |
 | Branded email only when configured; honest status | Tested (mocked) | Voucher line added. No real Resend delivery performed (External) |
 | Works for phones on the classroom LAN | Tested | Fixed three blockers: origin check rejected LAN POSTs, Secure cookies dropped on http, `crypto.randomUUID` missing on insecure origins |
-| Readable typography, ≥44px targets, one booking flow, back navigation, current step | Partial | The booking flow, invite and confirmation pages meet the brief. Secondary pages (compare, room detail, Santorini, My VIERCYS list, lookup, profile, itinerary, concierge, admin) only got the global text-size floor, not a redesign |
+| Readable typography, ≥44px targets, one booking flow, back navigation, current step | Tested | All guest, room, info and staff pages share the booking-flow design (QA group 4); `site.spec.ts` checks 44px targets, 320px overflow, plain language and axe on 22 pages. The editorial homepage, Santorini and Destinations pages keep their own look by design |
+| Private booking access | Tested | Reference + email lookup; no access links over HTTP; per-browser multi-booking sessions (QA group 1/3) |
+| Classroom-safe rate limiting | Tested | Failure-only, per-device first (QA group 1) |
+| Standard pages (About, Contact, FAQ, Privacy, Terms, Accessibility) | Tested | QA groups 2 and 4 |
 | Optional dismissible 3-step guide with Skip/Back, remembered, replayable | Tested | Inline panel (not a modal), so it never traps focus or covers the keyboard. Stored in localStorage; falls back to hidden if storage fails |
 | `DEMO_RUNBOOK.md`, `UX_AUDIT.md`, truthful status | Done | This file and the two linked above |
 
@@ -132,7 +147,7 @@ Legend: **Tested** = covered by an automated test listed above. **Implemented** 
 
 ## Next actions
 
-1. Run the runbook once on real phones on the classroom Wi-Fi.
-2. Bring the secondary pages (`/compare`, `/rooms/[category]`, `/my-stay` list) onto the booking-flow styles.
-3. Add a simultaneous double-redemption API test and a browser test for an expired link.
-4. Optional: QR rendering in the Invitations tab.
+1. Run the runbook once on real phones (iPhone Safari and Android Chrome) on the classroom Wi-Fi before inviting the class.
+2. A short screen-reader pass (VoiceOver on iPhone) through invite → confirmation.
+3. Do not set `VIERCYS_DEV_OUTBOX` outside automated tests.
+4. Optional: QR rendering in the Invitations tab; a staff (non-manager) account.

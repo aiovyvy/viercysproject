@@ -1460,3 +1460,10 @@ footer .wordmark {
   align-items: center;
   min-height: 44px;
 }
+/* Final QA: short words ("FAQ", "Staff") made links narrower than 44px. */
+.footer-links a,
+.footer-legal a,
+.navlinks a {
+  min-width: 44px;
+  justify-content: center;
+}
