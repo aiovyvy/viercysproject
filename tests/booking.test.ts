@@ -224,6 +224,20 @@ test("email fallback persists preview, escapes guest text and remains readable w
   assert.ok(html.includes("Reservation total"));
   assert.ok(html.includes("No real charge"));
   assert.ok(!html.includes("<script>"));
+  assert.ok(
+    !html.includes("<img"),
+    "localhost email does not depend on inaccessible images",
+  );
+  const hostedHtml = await emailHtml(
+    booking,
+    "confirmation",
+    "https://example.test/manage",
+    "https://hotel.example",
+  );
+  assert.ok(
+    hostedHtml.includes("https://hotel.example/images/architecture.jpg"),
+  );
+
   await sendEmails(booking.reference);
   assert.equal(Number(emailStatuses(booking.reference)[0].attempts), 1);
 });
@@ -585,5 +599,64 @@ test("provider failures and bounded email retries never undo a saved reservation
         else process.env[key] = previous[i];
       },
     );
+  }
+});
+
+test("test sender rejects other recipients; explicit event delivery leaves unrelated mail queued", async () => {
+  const { assertTestRecipient } = await import("../src/lib/email");
+  const { queueEmail } = await import("../src/lib/booking");
+  const keys = [
+    "RESEND_FROM",
+    "RESEND_API_KEY",
+    "RESEND_SANDBOX_RECIPIENT",
+    "RESEND_TEST_RECIPIENT",
+  ];
+  const saved = keys.map((key) => process.env[key]);
+  const originalFetch = globalThis.fetch;
+  try {
+    process.env.RESEND_FROM = "VIERCYS <onboarding@resend.dev>";
+    process.env.RESEND_API_KEY = "mock-key";
+    process.env.RESEND_SANDBOX_RECIPIENT = "account@example.test";
+    delete process.env.RESEND_TEST_RECIPIENT;
+    assert.doesNotThrow(() => assertTestRecipient("account@example.test"));
+    assert.throws(() => assertTestRecipient("classmate@example.test"));
+    delete process.env.RESEND_SANDBOX_RECIPIENT;
+    assert.throws(() => assertTestRecipient("account@example.test"));
+    process.env.RESEND_FROM = "VIERCYS <reservations@verified.example>";
+    assert.doesNotThrow(() => assertTestRecipient("classmate@example.test"));
+    const booking = createBooking(
+      make({
+        arrival: addDays(propertyToday(), 250),
+        departure: addDays(propertyToday(), 252),
+      }),
+    );
+    queueEmail(booking.reference, "reminder");
+    let calls = 0;
+    globalThis.fetch = async () => {
+      calls++;
+      return new Response(JSON.stringify({ id: "selected-confirmation" }));
+    };
+    const eventId = `${booking.reference}-${booking.version}-confirmation`;
+    await sendEmails(booking.reference, undefined, eventId);
+    await sendEmails(booking.reference, undefined, eventId);
+    assert.equal(calls, 1);
+    assert.equal(
+      emailStatuses(booking.reference).find(
+        (event) => event.kind === "reminder",
+      )?.status,
+      "queued",
+    );
+    assert.equal(
+      emailStatuses(booking.reference).find(
+        (event) => event.kind === "confirmation",
+      )?.status,
+      "accepted",
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+    keys.forEach((key, index) => {
+      if (saved[index] === undefined) delete process.env[key];
+      else process.env[key] = saved[index];
+    });
   }
 });

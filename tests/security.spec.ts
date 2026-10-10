@@ -46,7 +46,10 @@ test("a booking can only be opened with its reference and matching email", async
   // Opening someone else's link explains how to get in instead of a dead end.
   await page.goto("/booking/" + booking.reference);
   await expect(page.getByText(/reference and the email/)).toBeVisible();
-  await page.locator("main").getByRole("link", { name: "Find my booking" }).click();
+  await page
+    .locator("main")
+    .getByRole("link", { name: "Find my booking" })
+    .click();
   await expect(page.getByLabel("Booking reference")).toHaveValue(
     booking.reference,
   );
@@ -213,4 +216,78 @@ test("losing a voucher race re-prices at the standard rate and never charges sil
     loser.getByRole("heading", { name: "You're booked." }),
   ).toBeVisible();
   for (const { ctx } of phones) await ctx.close();
+});
+
+test("staff confirmation email requires authentication, one reviewed reference and configured delivery", async ({
+  browser,
+  request,
+}) => {
+  const arrival = addDays(propertyToday(), 350);
+  const response = await request.post("/api/bookings", {
+    data: {
+      arrival,
+      departure: addDays(arrival, 2),
+      adults: 2,
+      children: 0,
+      rooms: 1,
+      roomIds: ["S-101"],
+      extras: [],
+      guest: { name: "Deferred Guest", email: "deferred@example.test" },
+      consent: true,
+      idempotencyKey: randomUUID(),
+    },
+  });
+  const { booking } = await response.json();
+  expect(
+    (
+      await request.post("/api/admin/confirmation-email", {
+        data: {
+          reference: booking.reference,
+          confirmReference: booking.reference,
+        },
+      })
+    ).status(),
+  ).toBe(401);
+  const context = await browser.newContext();
+  await context.request.post("/api/admin/login", {
+    data: { username: "manager", password: PASSWORD },
+  });
+  const missingReview = await context.request.post(
+    "/api/admin/confirmation-email",
+    { data: { reference: booking.reference } },
+  );
+  expect(missingReview.status()).toBe(400);
+  const unavailable = await context.request.post(
+    "/api/admin/confirmation-email",
+    {
+      data: {
+        reference: booking.reference,
+        confirmReference: booking.reference,
+      },
+    },
+  );
+  expect(unavailable.status()).toBe(400);
+  expect((await unavailable.json()).error).toContain("not configured");
+  const page = await context.newPage();
+  await page.goto("/admin");
+  await page
+    .getByLabel("Search reservation, guest, email or arrival")
+    .fill(booking.reference);
+  const row = page.getByRole("row").filter({ hasText: booking.reference });
+  await expect(
+    row.getByText("Confirmation email: Not sent", { exact: false }),
+  ).toBeVisible();
+  await expect(
+    row.getByRole("button", { name: "Review confirmation email" }),
+  ).toBeDisabled();
+  await page.goto("/booking/" + booking.reference);
+  await expect(page.locator(".stay-ref")).toHaveText(booking.reference);
+  expect(
+    (
+      await (
+        await context.request.get("/api/bookings/" + booking.reference)
+      ).json()
+    ).email[0].attempts,
+  ).toBe(1);
+  await context.close();
 });

@@ -8,6 +8,18 @@ import type { Booking } from "@/lib/booking";
 import { money, type Room } from "@/lib/catalog";
 import { propertyToday, addDays, dayNumber } from "@/lib/policy";
 type Dashboard = {
+  emails: Record<
+    string,
+    {
+      id: string;
+      kind: string;
+      status: string;
+      error: string | null;
+      attempts: number;
+      provider_id: string | null;
+    }[]
+  >;
+  emailConfigured: boolean;
   blocks: {
     id: string;
     room_id: string;
@@ -281,6 +293,12 @@ export function StaffDashboard() {
                             Modify / cancel
                           </Link>
 
+                          <ConfirmationEmail
+                            booking={booking}
+                            events={data.emails[booking.reference] || []}
+                            configured={data.emailConfigured}
+                            refresh={result.refresh}
+                          />
                           {data.role === "manager" && (
                             <button
                               type="button"
@@ -623,6 +641,103 @@ function Report({
         {bookings.length} overlapping confirmed reservations. All figures are
         simulated, not actual hotel revenue.
       </p>
+    </div>
+  );
+}
+
+function ConfirmationEmail({
+  booking,
+  events,
+  configured,
+  refresh,
+}: {
+  booking: Booking;
+  events: Dashboard["emails"][string];
+  configured: boolean;
+  refresh: () => void;
+}) {
+  const [review, setReview] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const event = events.find(
+    (item) =>
+      item.id === `${booking.reference}-${booking.version}-confirmation`,
+  );
+  const accepted =
+    event &&
+    ["accepted", "sent", "delivered", "sending", "delayed", "bounced"].includes(
+      event.status,
+    );
+  return (
+    <div>
+      <p>
+        Confirmation email:{" "}
+        {event?.status === "demo-preview"
+          ? "Not sent"
+          : event?.status || "Not prepared"}
+        {event ? ` - ${event.attempts} attempt(s)` : ""}
+      </p>
+      {event?.provider_id && (
+        <small>Provider reference: {event.provider_id}</small>
+      )}
+      {event?.error && <p role="status">{event.error}</p>}
+      {!configured && (
+        <p>Email sending is not configured. Reservation saved.</p>
+      )}
+      {accepted && <p>Already submitted; duplicate sending is disabled.</p>}
+      {booking.status === "confirmed" && !accepted && (
+        <button
+          type="button"
+          className="j-button secondary"
+          disabled={!configured || busy}
+          onClick={() => setReview(true)}
+        >
+          Review confirmation email
+        </button>
+      )}
+      {review && (
+        <div className="j-panel">
+          <p>
+            Send one confirmation for {booking.reference} to {booking.email}? No
+            other reservation will be emailed.
+          </p>
+          <button
+            type="button"
+            className="j-button"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              setError("");
+              try {
+                await api("/api/admin/confirmation-email", {
+                  reference: booking.reference,
+                  confirmReference: booking.reference,
+                });
+                setReview(false);
+                refresh();
+              } catch (error) {
+                setError(
+                  error instanceof Error
+                    ? error.message
+                    : "Email could not be sent.",
+                );
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            {busy ? "Sending..." : "Send this confirmation"}
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => setReview(false)}
+          >
+            Cancel email
+          </button>
+          <Feedback error={error} />
+        </div>
+      )}
     </div>
   );
 }

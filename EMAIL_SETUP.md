@@ -2,22 +2,35 @@
 
 The existing Next.js booking endpoint saves a validated reservation and its unique confirmation event before processing email. Resend is called only on the server. No additional email endpoint, paid service, card collection or public deployment is required by these code changes.
 
-**Real delivery has not been verified.** This workspace has no `.env.local`, Resend API key, sender or webhook secret configured. Local tests use preview mode and a mocked provider; those tests do not demonstrate delivery to an inbox.
+**Provider acceptance verified locally on October 10, 2026.** A real browser booking, `VRC-18016E977E32`, was saved and its HTML confirmation accepted by Resend (message ID `01a123b0-d830-7587-a674-70239cfbd5bb`). Initial sandbox network failures left the reservation intact; the same event was retried after restarting with network access. Retrying after acceptance did not increase attempts or submit another message. **Inbox receipt remains awaiting the account owner's confirmation.** No public deployment or domain purchase was performed.
+
+## Current localhost test setup
+
+The ignored `.env.local` contains the existing private key, `RESEND_FROM="VIERCYS <onboarding@resend.dev>"`, and `RESEND_SANDBOX_RECIPIENT` set to the account owner's email. The sender checks this exact address before contacting Resend: other guests keep a valid reservation and reference, with an accurate unsuccessful email status. No restriction is bypassed and recipients are not redirected. Leave `RESEND_TEST_RECIPIENT` empty.
+
+Open http://localhost:3000/book, choose available dates and a room, enter the Resend account email, acknowledge the classroom reservation and confirm. Check the provider-acceptance message and inbox separately. Invitation links still use the same flow. HTTP localhost emails use complete branded typography and tables without an inaccessible localhost photograph. Private manage links only work while the local server is reachable.
+
+## Deferred confirmations: staff only
+
+Sign into `/admin`, find a confirmed reservation, and choose **Review confirmation email**. Review its saved email address and reference, then choose **Send this confirmation**. Only that reservation's current confirmation event is processed; queued reminders and other bookings are untouched. Delivery must be configured first. Accepted/submitted confirmations are protected against repeated sends; failed or previously preview-only confirmations can be retried. Existing per-recipient/global limits apply. The dashboard shows status, attempts, provider reference and errors. Guests cannot call the staff endpoint, and it accepts neither a custom recipient nor message content nor a bulk list.
+
+Adding or changing a sending domain does not scan or send existing reservations. Staff must explicitly review and send each deferred confirmation. New bookings use the guest's saved address automatically once configured.
 
 ## Configure your existing Resend account
 
 1. Add a domain you own in Resend and publish the SPF/DKIM records shown by its dashboard. Wait until Resend marks the domain verified. Do not use a Gmail/Outlook address as an owned sending domain. See [Resend verified domains](https://resend.com/docs/dashboard/domains/introduction).
 2. Create a server-side sending API key scoped to that domain where supported. Keep it private; never use a `NEXT_PUBLIC_` variable or commit it.
-3. Copy `.env.example` to `.env.local` if needed, preserving your existing settings, and set:
+3. Update `.env.local`, preserving your existing private key and settings, and set:
 
 ```dotenv
 RESEND_API_KEY=your_private_resend_key
 RESEND_FROM="VIERCYS <reservations@mail.your-own-domain.example>"
 RESEND_TEST_RECIPIENT=
+RESEND_SANDBOX_RECIPIENT=
 APP_URL=http://localhost:3000
 ```
 
-Replace the example sender with an address under your verified domain. Leave `RESEND_TEST_RECIPIENT` empty to deliver to the address entered during booking. Setting it redirects mail to a controlled test inbox; it must not be set when verifying guest-address delivery. Use the actual address of the running application for `APP_URL`: localhost links/images only work on that same computer. For phones on your LAN, use the laptop's reachable LAN URL. No public hosting is set up by this task.
+Replace the example sender with an address under your verified domain. The onboarding-only recipient guard no longer applies to a verified-domain sender. Leave `RESEND_TEST_RECIPIENT` empty to deliver to the address entered during booking. Setting it redirects mail to a controlled test inbox; it must not be set when verifying guest-address delivery. Use the actual address of the running application for `APP_URL`: localhost links/images only work on that same computer. For phones on your LAN, use the laptop's reachable LAN URL. No public hosting is set up by this task.
 
 Restart the Next.js server after changing environment variables. Missing either the API key or sender retains honest preview-only status and sends nothing.
 
@@ -43,3 +56,12 @@ Until a webhook arrives, the app reports provider acceptance rather than claimin
 Only a successfully validated, saved booking can generate this transactional confirmation. Guest retries require access to that specific booking, keep its saved recipient and content, and cannot accept arbitrary message content or target addresses. Same-origin mutation checks are preserved. Provider traffic, including failures/retries, is capped at ten attempts per destination address and 200 across the application in a 15-minute window. Limits leave the booking saved and mark the email unsuccessful; wait before retrying. These limits do not replace provider quotas or email ownership verification; the classroom app is not being certified for unrestricted public use.
 
 Tests cover preview fallback, escaped guest content, the branded template and simulation disclosure, recipient selection, concurrent duplicate submissions, provider rejection/retry with stable HTML and key, bounded retries, persisted bookings after failure, authenticated retry access, and signed webhook verification. Real inbox delivery remains the configuration and manual verification step above.
+
+
+## Verification for this integration
+
+- Production build, TypeScript and lint passed.
+- 22 unit tests passed, including sandbox recipient restrictions, single-event sending, duplicate suppression, provider failure persistence and template escaping.
+- The full 64-test browser suite passed 63 cases; the new staff test encountered a stale JavaScript chunk because a production rebuild ran while its test server was live. After restarting against the finished build, that test passed (1.6 seconds). All 64 cases are verified across those runs; the earlier 12-case booking/security run also passed.
+- A real localhost browser reservation was created, email retried through its authenticated confirmation page, and Resend acceptance recorded. Retrying the accepted event left its provider reference and attempt count unchanged. The confirmation page and persisted HTML preview were inspected visually.
+- The API key remains in ignored local configuration. A live-looking key found in the working `.env.example` was replaced with an empty placeholder before staging; no key was printed or committed.

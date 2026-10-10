@@ -746,6 +746,13 @@ export async function handler(
         return NextResponse.json({
           rooms,
           bookings,
+          emails: Object.fromEntries(
+            bookings.map((booking) => [
+              booking.reference,
+              emailStatuses(booking.reference),
+            ]),
+          ),
+          emailConfigured: emailConfigured(),
           role: staff.role,
           blocks: db()
             .prepare("SELECT * FROM availability_blocks ORDER BY arrival")
@@ -770,6 +777,31 @@ export async function handler(
           },
           currency: CURRENCY,
         });
+      }
+      if (route === "admin/confirmation-email" && request.method === "POST") {
+        if (
+          typeof body.reference !== "string" ||
+          body.confirmReference !== body.reference
+        )
+          throw new Error(
+            "Confirm the single reservation reference before sending.",
+          );
+        const booking = getBooking(body.reference);
+        if (!booking || booking.status !== "confirmed")
+          throw new Error("Choose a confirmed reservation.");
+        if (!emailConfigured())
+          throw new Error(
+            "Email sending is not configured. The reservation remains saved.",
+          );
+        queueEmail(booking.reference, "confirmation");
+        const eventId = `${booking.reference}-${booking.version}-confirmation`;
+        db()
+          .prepare(
+            "UPDATE email_attempts SET status='queued' WHERE id=? AND status='demo-preview'",
+          )
+          .run(eventId);
+        await sendEmails(booking.reference, requestOrigin(request), eventId);
+        return NextResponse.json({ email: emailStatuses(booking.reference) });
       }
       if (route === "admin/invites") {
         if (request.method === "POST") {
