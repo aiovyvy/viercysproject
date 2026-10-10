@@ -10,10 +10,11 @@
     "typecheck": "tsc --noEmit",
     "seed": "node --env-file-if-exists=.env.local --import tsx scripts/seed.ts",
     "reset": "node --env-file-if-exists=.env.local --import tsx scripts/reset.ts",
-    "test:unit": "node --import tsx --test tests/storage.test.ts tests/booking.test.ts && node --conditions=react-server --import tsx --test tests/ai-provider.test.ts",
+    "test:unit": "node --import tsx --test tests/storage.test.ts tests/booking.test.ts tests/class-invites.test.ts && node --conditions=react-server --import tsx --test tests/ai-provider.test.ts",
     "test:e2e": "playwright test",
     "db:init": "node --env-file-if-exists=.env.local --import tsx scripts/db-init.ts",
     "test:turso": "node --env-file-if-exists=.env.local node_modules/@playwright/test/cli.js test --config=playwright.turso.config.ts",
+    "db:migrate-class": "node --env-file-if-exists=.env.local --import tsx scripts/db-migrate-class.ts",
     "db:check": "node --env-file-if-exists=.env.local --import tsx scripts/db-check.ts"
   },
   "dependencies": {

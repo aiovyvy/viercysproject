@@ -32,6 +32,7 @@ import {
 import type { Booking, Pricing, VoucherCredit } from "@/lib/booking";
 
 export type VoucherStatus = {
+  classroom?: { name: string; email: string } | null;
   state: string;
   unusable: boolean;
   message: string | null;
@@ -288,6 +289,8 @@ function Counter({
 
 export function DatesStep({ initial }: { initial: SearchInput }) {
   const router = useRouter();
+  const invitation = useData<VoucherStatus>("/api/invite");
+  const classroom = !!invitation.data?.classroom;
   const today = propertyToday();
   const horizon = addDays(today, POLICY.horizonDays);
   const [arrival, setArrival] = useState(initial.arrival);
@@ -297,7 +300,13 @@ export function DatesStep({ initial }: { initial: SearchInput }) {
   const [rooms, setRooms] = useState(initial.rooms);
   const [error, setError] = useState("");
   const alert = useRef<HTMLDivElement>(null);
-  const search = { arrival, departure, adults, children, rooms };
+  const search = {
+    arrival,
+    departure: classroom ? addDays(arrival, 3) : departure,
+    adults,
+    children,
+    rooms: classroom ? 1 : rooms,
+  };
   const stay = nights(search);
   const party = adults + children;
   const neededRooms = Math.min(5, Math.ceil(party / 4));
@@ -315,7 +324,10 @@ export function DatesStep({ initial }: { initial: SearchInput }) {
   }
   function submit(event: React.FormEvent) {
     event.preventDefault();
-    const message = validateSearch(search);
+    const message =
+      classroom && adults + children > 4
+        ? "Your class invitation is for one room, with up to four guests in a larger suite. Choose fewer guests to continue."
+        : validateSearch(search);
     if (message) {
       setError(message);
       requestAnimationFrame(() => alert.current?.focus());
@@ -357,28 +369,31 @@ export function DatesStep({ initial }: { initial: SearchInput }) {
                 type="date"
                 min={addDays(today, 1)}
                 max={horizon}
-                value={departure}
+                value={classroom ? addDays(arrival, 3) : departure}
+                readOnly={classroom}
                 onChange={(e) => {
                   setDeparture(e.target.value);
                   setError("");
                 }}
                 aria-invalid={!!error && /date|check|year|night/i.test(error)}
               />
-              <Calendar
-                value={departure}
-                onChange={(value) => {
-                  setDeparture(value);
-                  setError("");
-                }}
-                min={addDays(today, 1)}
-                max={horizon}
-                label="check-out"
-              />
+              {!classroom && (
+                <Calendar
+                  value={departure}
+                  onChange={(value) => {
+                    setDeparture(value);
+                    setError("");
+                  }}
+                  min={addDays(today, 1)}
+                  max={horizon}
+                  label="check-out"
+                />
+              )}
             </div>
           </div>
         </div>
         <div className="book-nights" role="group" aria-label="Length of stay">
-          {[3, 4, 5, 7].map((count) => (
+          {(classroom ? [3] : [3, 4, 5, 7]).map((count) => (
             <button
               type="button"
               key={count}
@@ -429,15 +444,15 @@ export function DatesStep({ initial }: { initial: SearchInput }) {
           label="Rooms"
           hint="Essential sleeps 2 · Signature 3 · Grand 4"
           name="rooms"
-          value={rooms}
+          value={classroom ? 1 : rooms}
           min={1}
-          max={5}
+          max={classroom ? 1 : 5}
           onChange={(value) => {
             setRooms(value);
             setError("");
           }}
         />
-        {party > rooms * 4 && (
+        {!classroom && party > rooms * 4 && (
           <div className="book-inline-note">
             <p>
               A party of {party} needs at least {neededRooms} rooms (the largest
@@ -745,6 +760,8 @@ export function DetailsStep({
   roomIds: string[];
 }) {
   const router = useRouter();
+  const invitation = useData<VoucherStatus>("/api/invite");
+  const classroom = invitation.data?.classroom;
   const storageKey =
     "viercys-checkout-" + roomIds.join(",") + "-" + search.arrival;
   const [extras, setExtras] = useState<ExtraSelection[]>([]);
@@ -940,12 +957,15 @@ export function DetailsStep({
         <fieldset className="book-card">
           <legend>Your details</legend>
           <p className="book-help">
-            No account needed. We use your email to send your confirmation and
-            help you manage your reservation.
+            {classroom
+              ? "Email is optional for your class invitation. Save your reference and keep this browser's confirmation; without email, staff can help you reopen your stay on another device."
+              : "No account needed. We use your email to send your confirmation and help you manage your reservation."}
           </p>
           <div className="book-field">
             <label htmlFor="guest-name">Full name</label>
             <input
+              key={classroom?.name || "standard-name"}
+              defaultValue={classroom?.name || ""}
               id="guest-name"
               name="name"
               autoComplete="name"
@@ -955,14 +975,18 @@ export function DetailsStep({
             />
           </div>
           <div className="book-field">
-            <label htmlFor="guest-email">Email address</label>
+            <label htmlFor="guest-email">
+              Email address{classroom ? " (optional)" : ""}
+            </label>
             <input
+              key={classroom?.email || "standard-email"}
+              defaultValue={classroom?.email || ""}
               id="guest-email"
               name="email"
               type="email"
               inputMode="email"
               autoComplete="email"
-              required
+              required={!classroom}
               maxLength={254}
             />
           </div>

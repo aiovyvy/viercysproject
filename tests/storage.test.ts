@@ -51,7 +51,7 @@ test("additive initialization and reopening preserve reservations, invitations a
         .prepare("SELECT COUNT(*) AS count FROM schema_migrations")
         .get())!.count,
     ),
-    1,
+    2,
   );
 });
 test("async transaction context rolls back all writes and keeps other requests outside its scope", async () => {

@@ -365,14 +365,16 @@ export function Stay({
           )}
           {!cancelled && (
             <nav className="stay-actions" aria-label="Manage your stay">
-              <button
-                type="button"
-                className="book-button primary"
-                aria-expanded={panel === "extend"}
-                onClick={() => open("extend")}
-              >
-                Extend stay
-              </button>
+              {!booking.classroom && (
+                <button
+                  type="button"
+                  className="book-button primary"
+                  aria-expanded={panel === "extend"}
+                  onClick={() => open("extend")}
+                >
+                  Extend stay
+                </button>
+              )}
               <button
                 type="button"
                 className="book-button"
@@ -638,12 +640,16 @@ export function Stay({
             <p>
               {latestEmail
                 ? EMAIL_STATUS[latestEmail.status] || latestEmail.status
-                : "No email recorded."}
+                : booking.email
+                  ? "No email recorded."
+                  : "No email address was provided. Your reservation is confirmed. Save your reference and keep this browser access; staff can help you reopen your stay on another device."}
             </p>
             <p className="book-change-links">
-              <Link href={`/booking/${reference}/email-preview`}>
-                View the email
-              </Link>
+              {booking.email && (
+                <Link href={`/booking/${reference}/email-preview`}>
+                  View the email
+                </Link>
+              )}
               {latestEmail &&
                 ["failed", "queued", "demo-preview"].includes(
                   latestEmail.status,

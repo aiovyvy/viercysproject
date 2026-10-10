@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { classClaim, redeemClass } from "./class-invites";
 import { db, transaction, hash, listRooms, type Session } from "./db";
 import {
   findInvite,
@@ -83,6 +84,7 @@ export type Booking = SearchInput & {
   version: number;
   created_at: string;
   invite_id: string | null;
+  classroom: boolean;
 };
 export type BookingInput = SearchInput & {
   roomIds: string[];
@@ -318,6 +320,7 @@ export async function getBooking(reference: string): Promise<Booking | null> {
     .all(reference)) as unknown as Booking["allocations"];
   return {
     ...row,
+    classroom: !!(await classClaim(row.invite_id as string | null)),
     rooms: Number(row.room_count),
     extras: JSON.parse(String(row.extras)),
     pricing: JSON.parse(String(row.pricing)),
@@ -354,8 +357,23 @@ export async function createBooking(input: BookingInput) {
     input.guest.name.length > 100
   )
     throw new Error("Enter your full name (2–100 characters).");
-  const email = String(input.guest.email).trim().toLowerCase();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254)
+  const invitation = await findInvite(input.inviteToken);
+  let classroom = await classClaim(invitation.invite?.id);
+  // A repeated completed checkout may arrive after its voucher cookie was cleared.
+  if (!classroom && /^[a-zA-Z0-9_-]{16,100}$/.test(input.idempotencyKey)) {
+    const prior = await db()
+      .prepare("SELECT invite_id FROM bookings WHERE idempotency_key=?")
+      .get(input.idempotencyKey);
+    classroom = await classClaim(prior?.invite_id as string | undefined);
+  }
+  const email = String(input.guest.email ?? "")
+    .trim()
+    .toLowerCase();
+  if (
+    (!email && !classroom) ||
+    (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) ||
+    email.length > 254
+  )
     throw new Error("Enter a valid email address.");
   if (!/^[a-zA-Z0-9_-]{16,100}$/.test(input.idempotencyKey))
     throw new Error("A valid checkout request key is required.");
@@ -408,6 +426,10 @@ export async function createBooking(input: BookingInput) {
       const { state } = await findInvite(input.inviteToken);
       if (state !== "valid") throw new Error(INVITE_MESSAGES[state]);
     }
+    if (classroom && (!useVoucher || nights(input) !== 3 || input.rooms !== 1))
+      throw new Error(
+        "Your class invitation covers exactly three nights in one room. Choose three nights and one room to continue.",
+      );
     const total = pricing(input, rooms, input.extras || [], useVoucher);
     const reference = "VRC-" + randomBytes(6).toString("hex").toUpperCase();
     await db()
@@ -439,9 +461,11 @@ export async function createBooking(input: BookingInput) {
       await db()
         .prepare("UPDATE bookings SET invite_id=? WHERE reference=?")
         .run(await redeemInvite(input.inviteToken!, reference), reference);
-    await db()
-      .prepare("INSERT OR IGNORE INTO guests(email,name,phone) VALUES(?,?,?)")
-      .run(email, canonical.guest.name, canonical.guest.phone);
+    if (classroom) await redeemClass(classroom, reference);
+    if (email)
+      await db()
+        .prepare("INSERT OR IGNORE INTO guests(email,name,phone) VALUES(?,?,?)")
+        .run(email, canonical.guest.name, canonical.guest.phone);
     await db()
       .prepare(
         "INSERT INTO payment_records(id,reference,status,amount,currency) VALUES(?,?,?,?,?)",
@@ -467,6 +491,13 @@ export async function modify(
       "Only confirmed stays that have not checked in can be modified.",
     );
   assertSearch(input);
+  if (
+    (await classClaim(original.invite_id)) &&
+    (nights(input) !== 3 || input.rooms !== 1)
+  )
+    throw new Error(
+      "Class reservations must remain exactly three nights in one room.",
+    );
   if (auth?.kind !== "admin" && original.arrival <= propertyToday())
     throw new Error("Online changes close on the arrival date. " + FRONT_DESK);
   return await transaction(async () => {
@@ -624,6 +655,7 @@ export type EmailKind =
   "confirmation" | "modification" | "cancellation" | "reminder";
 export async function queueEmail(reference: string, kind: EmailKind) {
   const booking = (await getBooking(reference))!;
+  if (!booking.email) return;
   await db()
     .prepare(
       "INSERT OR IGNORE INTO email_attempts(id,reference,version,kind,html) VALUES(?,?,?,?,?)",

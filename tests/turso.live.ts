@@ -190,7 +190,9 @@ test("Turso competing room bookings and invitation redemption commit once", asyn
   await b.close();
 });
 
-async function independentBooking(payload: ReturnType<typeof input>) {
+async function independentBooking(
+  payload: ReturnType<typeof input> & { inviteToken?: string },
+) {
   return new Promise<{ saved: boolean; reference?: string }>(
     (resolve, reject) => {
       const worker = spawn(
@@ -243,4 +245,78 @@ test("independent server processes cannot double-book a Turso room", async ({
       )
     ).status(),
   ).toBe(200);
+});
+
+test("shared class limits and duplicate students hold across independent Turso processes", async ({
+  browser,
+  request,
+}) => {
+  await staff(request);
+  for (const duplicate of [false, true]) {
+    const campaign = await (
+      await request.post("/api/admin/class-invites", {
+        data: {
+          name: "Turso shared invitation verification",
+          limit: duplicate ? 30 : 1,
+          expires: new Date(Date.now() + 86400000).toISOString(),
+          active: true,
+          roster: "",
+        },
+      })
+    ).json();
+    const token = new URL(campaign.url).pathname.split("/").pop();
+    const contexts = await Promise.all([
+      browser.newContext(),
+      browser.newContext(),
+    ]);
+    const claimTokens: string[] = [];
+    for (const [index, context] of contexts.entries()) {
+      const response = await context.request.post(
+        "/api/invite/class/register",
+        {
+          data: {
+            token,
+            name: "Turso Verification Guest",
+            identifier: duplicate
+              ? "TURSO-SAME-STUDENT"
+              : `TURSO-STUDENT-${index}`,
+            email: "",
+          },
+        },
+      );
+      expect(response.ok()).toBe(true);
+      claimTokens.push(
+        (await context.cookies()).find(
+          (cookie) => cookie.name === "viercys_invite",
+        )!.value,
+      );
+    }
+    const day = addDays(arrival, duplicate ? 28 : 23);
+    const future = { ...search, arrival: day, departure: addDays(day, 3) };
+    const rooms = (
+      await (await request.post("/api/availability", { data: future })).json()
+    ).rooms as { id: string }[];
+    const results = await Promise.all(
+      claimTokens.map((inviteToken, index) =>
+        independentBooking({
+          ...input(rooms[index].id),
+          ...future,
+          guest: { name: "Turso Verification Guest", email: "" },
+          inviteToken,
+        }),
+      ),
+    );
+    expect(results.filter((result) => result.saved)).toHaveLength(1);
+    for (const result of results)
+      if (result.reference) references.push(result.reference);
+    const saved = await (await request.get("/api/admin/class-invites")).json();
+    expect(
+      saved.campaigns.find((item: { id: string }) => item.id === campaign.id)
+        .redemptions,
+    ).toBe(1);
+    await request.post("/api/admin/class-invites", {
+      data: { action: "status", id: campaign.id, active: false },
+    });
+    await Promise.all(contexts.map((context) => context.close()));
+  }
 });

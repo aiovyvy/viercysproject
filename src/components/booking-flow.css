@@ -889,3 +889,10 @@ fieldset.book-card legend + * {
 .stay-conflict .stay-actions {
   margin-top: 14px;
 }
+
+.class-registration { margin-top: 2rem; text-align: left; }
+.class-registration .book-field { margin-bottom: 1.2rem; }
+.class-registration .book-button { width: 100%; }
+.class-manager { margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #d7d2c8; }
+.class-manager input[readonly], .class-manager textarea[readonly] { width: 100%; min-width: 0; margin: 1rem 0; padding: .8rem; font: inherit; }
+.class-manager li { overflow-wrap: anywhere; margin-block: .7rem; }

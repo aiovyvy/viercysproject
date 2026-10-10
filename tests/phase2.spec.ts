@@ -134,11 +134,12 @@ test("concurrent requests, duplicate retries and secure guest lookup", async ({
   request,
   browser,
 }) => {
+  const email = `concurrency-${randomUUID()}@example.test`;
   const search = stay(90);
   const base = {
     ...search,
     roomIds: ["S-110"],
-    guest: { name: "Concurrency Guest", email: "concurrency@example.test" },
+    guest: { name: "Concurrency Guest", email: email },
     extras: [],
     consent: true,
     idempotencyKey: randomUUID(),
@@ -167,7 +168,7 @@ test("concurrent requests, duplicate retries and secure guest lookup", async ({
   // known and unknown emails.
   const known = await (
     await stranger.request.post("/api/lookup", {
-      data: { email: "concurrency@example.test" },
+      data: { email: email },
     })
   ).json();
   const unknown = await (
@@ -179,14 +180,12 @@ test("concurrent requests, duplicate retries and secure guest lookup", async ({
   expect(JSON.stringify(known)).not.toMatch(/token|lookup\?/);
   await page.goto("/lookup");
   await page.getByText("Forgot your reference? Email me a link").click();
-  await page.getByLabel("Email address").fill("concurrency@example.test");
+  await page.getByLabel("Email address").fill(email);
   await page.getByRole("button", { name: "Email me a private link" }).click();
   await expect(page.getByRole("status")).toContainText("Email is not set up");
   await expect(page.locator("a[href*='token=']")).toHaveCount(0);
   // The link reaches only the (test) mailbox, then works once.
-  const token = new URL(
-    await outboxLink("concurrency@example.test"),
-  ).searchParams.get("token")!;
+  const token = new URL(await outboxLink(email)).searchParams.get("token")!;
   await page.goto("/lookup?token=" + token);
   await page.getByRole("button", { name: "Open my booking" }).click();
   await expect(page).toHaveURL("/my-stay");
@@ -331,7 +330,10 @@ test("verified profile and staff blocks, calendar, housekeeping and arrival oper
       ...search,
       roomIds: ["S-109"],
       extras: [],
-      guest: { name: "Operations Guest", email: "operations@example.test" },
+      guest: {
+        name: "Operations Guest",
+        email: `operations-${randomUUID()}@example.test`,
+      },
       consent: true,
       idempotencyKey: randomUUID(),
     },

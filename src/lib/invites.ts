@@ -94,7 +94,7 @@ export async function redeemInvite(token: string, reference: string) {
 export async function releaseInvite(reference: string) {
   await db()
     .prepare(
-      "UPDATE invites SET reference=NULL,redeemed_at=NULL WHERE reference=?",
+      "UPDATE invites SET reference=NULL,redeemed_at=NULL WHERE reference=? AND id NOT IN(SELECT invite_id FROM class_redemptions)",
     )
     .run(reference);
 }

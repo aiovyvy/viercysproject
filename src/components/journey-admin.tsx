@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { ClassInviteManager } from "./admin-class-invites";
 import { InviteManager } from "./admin-invites";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -195,7 +196,10 @@ export function StaffDashboard() {
             </button>
           </div>
           {view === "invitations" && (
-            <InviteManager manager={data.role === "manager"} />
+            <>
+              <InviteManager manager={data.role === "manager"} />
+              {data.role === "manager" && <ClassInviteManager />}
+            </>
           )}
           {view === "reservations" && (
             <>

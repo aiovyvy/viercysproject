@@ -49,7 +49,7 @@ async function ensureReady() {
     if (remoteDatabase()) {
       try {
         const result = await connection.execute(
-          "SELECT version FROM schema_migrations WHERE version=1",
+          "SELECT version FROM schema_migrations WHERE version=2",
         );
         if (!result.rows.length) throw new Error("Missing migration");
       } catch {

@@ -90,3 +90,7 @@ If `publish` already exists, inspect it rather than adding it again. If the remo
 Vercel's free hostname is sufficient for the website. A custom sending domain is separately needed for unrestricted guest email. Hobby/Turso Free/Resend Free remain subject to their account eligibility and quotas; this work does not enable billing or purchase anything. See [Vercel Hobby](https://vercel.com/docs/plans/hobby) and [deployment environments](https://vercel.com/docs/deployments/environments). Environment changes require redeployment.
 
 Remaining user setup: review and push the local commit when ready, import/configure Vercel, set the actual public `APP_URL`, and verify a sending domain if classmates need emails. The database and localhost flow are ready independently of those steps.
+
+## Shared classroom invitations
+
+Shared campaigns extend the original vouchers. See [SHARED_CLASS_INVITATIONS.md](SHARED_CLASS_INVITATIONS.md) for manager creation, one-time links, private roster codes and additive migration 2. The migration has already been applied to the existing Turso database; no reset or new service is needed.

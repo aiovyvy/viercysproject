@@ -1,3 +1,10 @@
+import {
+  createCampaign,
+  registerClass,
+  listCampaigns,
+  pauseCampaign,
+  classClaim,
+} from "@/lib/class-invites";
 import { Webhook } from "svix";
 import { answerConcierge, requestStructuredSuggestion } from "@/ai/provider";
 import { cookies } from "next/headers";
@@ -204,7 +211,31 @@ export async function handler(
     }
     const body = request.method === "GET" ? {} : await request.json();
     if (route === "invite" && request.method === "GET")
-      return NextResponse.json(voucherStatus(invite));
+      return NextResponse.json({
+        ...voucherStatus(invite),
+        classroom: await classClaim(invite.invite?.id).then((claim) =>
+          claim ? { name: claim.name, email: claim.email } : null,
+        ),
+      });
+    if (route === "invite/class/register" && request.method === "POST") {
+      const buckets: Bucket[] = [
+        ["class-device-" + device, 20],
+        ["class-ip-" + ip, 300],
+      ];
+      if (await throttled(buckets))
+        return NextResponse.json({ error: THROTTLE_MESSAGE }, { status: 429 });
+      await recordFailure(buckets);
+      const claim = await registerClass(body);
+      const response = NextResponse.json({ ok: true });
+      response.cookies.set(INVITE_COOKIE, claim.token, {
+        httpOnly: true,
+        secure: secureCookies(request),
+        sameSite: "lax",
+        expires: new Date(claim.expires),
+        path: "/",
+      });
+      return response;
+    }
     if (route === "invite/claim" && request.method === "POST") {
       // Valid tokens are 192-bit secrets, so only failed guesses are counted.
       const buckets: Bucket[] = [
@@ -773,6 +804,31 @@ export async function handler(
           { error: "Staff authentication required." },
           { status: 401 },
         );
+      if (route === "admin/class-invites") {
+        if (staff.role !== "manager")
+          return NextResponse.json(
+            { error: "Manager access required." },
+            { status: 403 },
+          );
+        if (request.method === "POST") {
+          if (body.action === "status") {
+            await pauseCampaign(body.id, body.active);
+            return NextResponse.json({ ok: true });
+          }
+          const created = await createCampaign(body);
+          return NextResponse.json({
+            id: created.id,
+            url: `${requestOrigin(request)}/invite/class/${created.token}`,
+            credentials: created.credentials,
+          });
+        }
+        if (request.method !== "GET")
+          return NextResponse.json(
+            { error: "Method not allowed." },
+            { status: 405 },
+          );
+        return NextResponse.json(await listCampaigns());
+      }
       if (route === "admin/dashboard") {
         const bookings = await listBookings(staff);
         const rooms = await listRooms();
@@ -831,6 +887,10 @@ export async function handler(
         if (!emailConfigured())
           throw new Error(
             "Email sending is not configured. The reservation remains saved.",
+          );
+        if (!booking.email)
+          throw new Error(
+            "This reservation has no email address. Its on-screen confirmation remains valid.",
           );
         await queueEmail(booking.reference, "confirmation");
         const eventId = `${booking.reference}-${booking.version}-confirmation`;

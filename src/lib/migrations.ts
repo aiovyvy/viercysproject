@@ -3,6 +3,7 @@ import { resolve, dirname, basename } from "node:path";
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import type { Client, Transaction, InStatement } from "@libsql/client";
 import { CATEGORIES, EXTRAS } from "./catalog";
+import { CLASS_INVITATION_SCHEMA } from "./class-invite-schema";
 
 export async function initializeDatabase(client: Client, remote: boolean) {
   const tx = await client.transaction("write");
@@ -21,6 +22,7 @@ export async function initializeDatabase(client: Client, remote: boolean) {
           `ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`,
         );
     }
+    await tx.executeMultiple(CLASS_INVITATION_SCHEMA);
     const seeds: InStatement[] = [];
     for (const category of CATEGORIES) {
       seeds.push({
@@ -64,7 +66,7 @@ export async function initializeDatabase(client: Client, remote: boolean) {
       "CREATE TABLE IF NOT EXISTS schema_migrations(version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)",
     );
     await tx.execute(
-      "INSERT OR IGNORE INTO schema_migrations(version) VALUES(1)",
+      "INSERT OR IGNORE INTO schema_migrations(version) VALUES(1),(2)",
     );
     const counts = await tx.execute(
       "SELECT category,COUNT(*) AS total FROM rooms GROUP BY category",
@@ -154,4 +156,26 @@ async function initializeStaff(tx: Transaction, password: string) {
       "manager",
     ],
   });
+}
+
+/** Explicit remote upgrade; intentionally does not seed or change staff credentials. */
+export async function migrateClassInvitations(client: Client) {
+  const tx = await client.transaction("write");
+  try {
+    const initialized = await tx.execute(
+      "SELECT version FROM schema_migrations WHERE version=1",
+    );
+    if (!initialized.rows.length)
+      throw new Error("Initialize the base database first.");
+    await tx.executeMultiple(CLASS_INVITATION_SCHEMA);
+    await tx.execute(
+      "INSERT OR IGNORE INTO schema_migrations(version) VALUES(2)",
+    );
+    await tx.commit();
+  } catch (error) {
+    if (!tx.closed) await tx.rollback();
+    throw error;
+  } finally {
+    tx.close();
+  }
 }
