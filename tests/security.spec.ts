@@ -182,7 +182,7 @@ test("losing a voucher race re-prices at the standard rate and never charges sil
   );
   await Promise.all(
     phones.map(({ page }) =>
-      page.getByRole("button", { name: /Confirm demo reservation/ }).click(),
+      page.getByRole("button", { name: /Confirm reservation/ }).click(),
     ),
   );
   await expect
@@ -203,11 +203,11 @@ test("losing a voucher race re-prices at the standard rate and never charges sil
     loser.getByText("Nothing has been booked or charged."),
   ).toBeVisible();
   await expect(loser.locator(".book-price-total")).toContainText("€540.00");
-  await expect(loser.getByText("Demo voucher applied.")).toHaveCount(0);
+  await expect(loser.getByText("Invitation voucher applied.")).toHaveCount(0);
   // The loser is not booked until they explicitly confirm the new price.
   expect(loser.url()).toContain("/book/details");
   await loser
-    .getByRole("button", { name: "Confirm demo reservation · €540.00" })
+    .getByRole("button", { name: "Confirm reservation · €540.00" })
     .click();
   await expect(
     loser.getByRole("heading", { name: "You're booked." }),

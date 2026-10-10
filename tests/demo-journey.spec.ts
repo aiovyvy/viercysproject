@@ -55,7 +55,7 @@ test("phone: invitation -> guide -> 3 nights -> Essential -> confirmation -> sta
   await guide.getByRole("button", { name: "Next" }).click();
   await guide.getByRole("button", { name: "Start booking" }).click();
   await expect(guide).toHaveCount(0);
-  await expect(page.getByText("Demo voucher applied.")).toBeVisible();
+  await expect(page.getByText("Invitation voucher applied.")).toBeVisible();
   await expect(page.locator('[aria-current="step"]')).toContainText(
     "Dates & guests",
   );
@@ -69,12 +69,12 @@ test("phone: invitation -> guide -> 3 nights -> Essential -> confirmation -> sta
     "Review & confirm",
   );
   const price = page.getByRole("region", { name: "Price breakdown" });
-  await expect(price).toContainText("Demo voucher");
+  await expect(price).toContainText("Invitation voucher");
   await expect(price.locator(".book-price-total")).toContainText("€0.00");
   await page.getByLabel("Full name").fill("Sam Student");
   await page.getByLabel("Email address").fill("sam.student@example.test");
   await page.getByRole("checkbox", { name: /simulated booking/ }).check();
-  await page.getByRole("button", { name: "Confirm demo reservation" }).click();
+  await page.getByRole("button", { name: "Confirm reservation" }).click();
 
   await expect(page).toHaveURL(/\/booking\/VRC-[0-9A-F]+\?success=1/);
   await expect(
@@ -83,7 +83,7 @@ test("phone: invitation -> guide -> 3 nights -> Essential -> confirmation -> sta
   const reference = (await page.locator(".stay-ref").innerText()).trim();
   await expect(page.getByText(/Voucher savings €540\.00/)).toBeVisible();
   await expect(
-    page.getByText("Email is not configured for this demo", { exact: false }),
+    page.getByText("Email delivery is not configured", { exact: false }),
   ).toBeVisible();
   for (const name of ["Extend stay", "Change dates"])
     await expect(page.getByRole("button", { name })).toBeVisible();
@@ -149,7 +149,7 @@ test("voucher pricing for 5 Signature nights and a guest extension", async ({
   await page.getByLabel("Full name").fill("Extension Guest");
   await page.getByLabel("Email address").fill("extend@example.test");
   await page.getByRole("checkbox", { name: /simulated booking/ }).check();
-  await page.getByRole("button", { name: "Confirm demo reservation" }).click();
+  await page.getByRole("button", { name: "Confirm reservation" }).click();
   await expect(
     page.getByRole("heading", { name: "You're booked." }),
   ).toBeVisible();
@@ -158,7 +158,7 @@ test("voucher pricing for 5 Signature nights and a guest extension", async ({
     .getByRole("button", { name: "Check price and availability" })
     .click();
   await expect(
-    page.getByText("Additional simulated amount: €640.00"),
+    page.getByText("Additional amount: €640.00"),
   ).toBeVisible();
   await page.getByRole("button", { name: "Confirm change" }).click();
   await expect(page.getByText("Your stay has been updated")).toBeVisible();
@@ -204,14 +204,14 @@ test("works when phones reach the laptop by IP over plain http", async ({
   await page.goto(ipBase + new URL(invite.url).pathname);
   await page.getByRole("button", { name: "Claim your stay" }).click();
   await expect(page).toHaveURL(ipBase + "/book");
-  await expect(page.getByText("Demo voucher applied.")).toBeVisible();
+  await expect(page.getByText("Invitation voucher applied.")).toBeVisible();
   await page.getByRole("button", { name: "See available rooms" }).click();
   await page.getByRole("button", { name: "Select Essential Room" }).click();
   await expect(page.locator(".book-price-total")).toContainText("€0.00");
   await page.getByLabel("Full name").fill("Network Student");
   await page.getByLabel("Email address").fill("network@example.test");
   await page.getByRole("checkbox", { name: /simulated booking/ }).check();
-  await page.getByRole("button", { name: "Confirm demo reservation" }).click();
+  await page.getByRole("button", { name: "Confirm reservation" }).click();
   await expect(
     page.getByRole("heading", { name: "You're booked." }),
   ).toBeVisible();

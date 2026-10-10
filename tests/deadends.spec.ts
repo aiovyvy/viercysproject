@@ -25,7 +25,7 @@ async function bookInUi(page: Page, search: object, room: string) {
   await page.getByLabel("Full name").fill("Dead End Tester");
   await page.getByLabel("Email address").fill("deadend@example.test");
   await page.getByRole("checkbox", { name: /simulated booking/ }).check();
-  await page.getByRole("button", { name: /Confirm demo reservation/ }).click();
+  await page.getByRole("button", { name: /Confirm reservation/ }).click();
   await expect(
     page.getByRole("heading", { name: "You're booked." }),
   ).toBeVisible();

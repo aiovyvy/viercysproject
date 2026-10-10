@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { render } from "@react-email/render";
 import { randomBytes } from "node:crypto";
 import { appendFileSync } from "node:fs";
-import { db, hash } from "./db";
+import { db, hash, transaction } from "./db";
 import { getBooking, type Booking, type EmailKind } from "./booking";
 import { money } from "./catalog";
 import { formatDate } from "./policy";
@@ -55,7 +55,7 @@ export async function emailHtml(
   const row = (label: string, value: string) =>
     `<tr><td style="padding:10px 0;border-bottom:1px solid #d6ccbc">${e(label)}</td><td style="padding:10px 0;border-bottom:1px solid #d6ccbc;text-align:right">${e(value)}</td></tr>`;
   const price = (value: number) => money(value, booking.currency);
-  const document = `<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>VIERCYS ${e(kind)}</title></head><body style="margin:0;background:#F3EEE5;color:#292C28;font-family:Arial,Helvetica,sans-serif"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:24px 12px"><table role="presentation" width="600" style="width:100%;max-width:600px" cellspacing="0" cellpadding="0"><tr><td style="padding:30px;background:#233F4B;color:#F3EEE5"><div style="font:30px Georgia,serif;letter-spacing:4px">VIERCYS</div><p style="font-size:12px;letter-spacing:2px">HOTELS &amp; RESORTS</p><p>Where Earth Meets the Sea.</p></td></tr><tr><td><img src="${e(appBase(base) + "/images/architecture.jpg")}" width="600" alt="Mediterranean architectural inspiration" style="width:100%;height:auto;display:block"></td></tr><tr><td style="padding:32px 24px;background:#fffaf2"><p>Dear ${e(booking.name)},</p><h1 style="font:36px Georgia,serif;color:#233F4B">${title}</h1><p style="line-height:1.8">Your ${kind === "cancellation" ? "cancelled" : "confirmed demo"} VIERCYS Santorini stay is detailed below. This is a fictional property and simulated payment. No real charge has been made.</p><table width="100%" cellspacing="0" cellpadding="0" style="font-size:15px">${row("Booking reference", booking.reference)}${row("Property", "VIERCYS Santorini, Greece")}${row("Stay", formatDate(booking.arrival) + " – " + formatDate(booking.departure))}${row("Guests", booking.adults + " adults, " + booking.children + " children")}${booking.pricing.rooms.map((room) => row(room.name + " · Room " + room.number, room.nights + " nights × " + price(room.rate) + " = " + price(room.subtotal))).join("")}${booking.pricing.extras.map((extra) => row(extra.name + " × " + extra.quantity + (extra.status === "pending-approval" ? " (request, not confirmed)" : " (confirmed demo)"), price(extra.subtotal))).join("")}${row("Rooms", price(booking.pricing.roomSubtotal))}${row("Confirmed demo extras", price(booking.pricing.extrasSubtotal))}${booking.pricing.tax ? row("Tax", price(booking.pricing.tax)) : ""}${booking.pricing.voucher ? row("Demo voucher · " + booking.pricing.voucher.coveredNights + " Essential night" + (booking.pricing.voucher.coveredNights === 1 ? "" : "s") + " covered", "−" + price(booking.pricing.voucher.discount)) : ""}${row("Simulated amount due", price(booking.pricing.total))}${row("Approval requests excluded from total", price(booking.pricing.pendingApprovalTotal))}${row("Status", booking.status === "cancelled" ? "Cancelled · simulated refund" : "Confirmed · simulated payment, no real charge")}</table><p style="line-height:1.8">Online demo cancellation is available until two calendar days before arrival, for a full simulated refund. Requests for dinner, spa and sailing require approval; they are not bookings.</p><p><a href="${e(link)}" style="display:inline-block;background:#233F4B;color:#F3EEE5;padding:18px 24px;text-decoration:none">Securely manage your booking</a></p><p style="font-size:13px;line-height:1.7">This private link opens your booking for 7 days. On any device you can also use Find my booking with your reference and email. Never share your link. For help, use the VIERCYS Concierge in the app. No real property contact is implied.</p><p style="font:20px Georgia,serif">You book the stay. We curate the experience.</p></td></tr><tr><td style="padding:22px;font-size:12px;line-height:1.6">VIERCYS concept property · Temporary editorial photography.<br>In preview mode, this email is not sent. Status in My VIERCYS distinguishes preview, queued, failed and provider accepted.</td></tr></table></td></tr></table></body></html>`;
+  const document = `<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>VIERCYS ${e(kind)}</title></head><body style="margin:0;background:#F3EEE5;color:#292C28;font-family:Arial,Helvetica,sans-serif"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:24px 12px"><table role="presentation" width="600" style="width:100%;max-width:600px" cellspacing="0" cellpadding="0"><tr><td style="padding:30px;background:#233F4B;color:#F3EEE5"><div style="font:30px Georgia,serif;letter-spacing:4px">VIERCYS</div><p style="font-size:12px;letter-spacing:2px">HOTELS &amp; RESORTS</p><p>Where Earth Meets the Sea.</p></td></tr><tr><td><img src="${e(appBase(base) + "/images/architecture.jpg")}" width="600" alt="Mediterranean architectural inspiration" style="width:100%;height:auto;display:block"></td></tr><tr><td style="padding:32px 24px;background:#fffaf2"><p>Dear ${e(booking.name)},</p><h1 style="font:36px Georgia,serif;color:#233F4B">${title}</h1><p style="line-height:1.8">Your ${kind === "cancellation" ? "cancelled" : "confirmed"} VIERCYS Santorini stay is detailed below. Thank you for choosing VIERCYS. This reservation is part of an HCI classroom simulation: no actual accommodation or payment is provided. No real charge has been made.</p><table width="100%" cellspacing="0" cellpadding="0" style="font-size:15px">${row("Booking reference", booking.reference)}${row("Property", "VIERCYS Santorini, Greece")}${row("Stay", formatDate(booking.arrival) + " – " + formatDate(booking.departure))}${row("Guests", booking.adults + " adults, " + booking.children + " children")}${booking.pricing.rooms.map((room) => row(room.name + " · Room " + room.number, room.nights + " nights × " + price(room.rate) + " = " + price(room.subtotal))).join("")}${booking.pricing.extras.map((extra) => row(extra.name + " × " + extra.quantity + (extra.status === "pending-approval" ? " (request, not confirmed)" : " (confirmed)"), price(extra.subtotal))).join("")}${row("Rooms", price(booking.pricing.roomSubtotal))}${row("Confirmed extras", price(booking.pricing.extrasSubtotal))}${booking.pricing.tax ? row("Tax", price(booking.pricing.tax)) : ""}${booking.pricing.voucher ? row("Invitation voucher · " + booking.pricing.voucher.coveredNights + " Essential night" + (booking.pricing.voucher.coveredNights === 1 ? "" : "s") + " covered", "−" + price(booking.pricing.voucher.discount)) : ""}${row("Reservation total", price(booking.pricing.total))}${row("Approval requests excluded from total", price(booking.pricing.pendingApprovalTotal))}${row("Status", booking.status === "cancelled" ? "Cancelled · simulated refund" : "Confirmed · simulated payment, no real charge")}</table><p style="line-height:1.8">Online cancellation is available until two calendar days before arrival, for a full simulated refund. Requests for dinner, spa and sailing require approval; they are not bookings.</p><p><a href="${e(link)}" style="display:inline-block;background:#233F4B;color:#F3EEE5;padding:18px 24px;text-decoration:none">Securely manage your booking</a></p><p style="font-size:13px;line-height:1.7">This private link opens your booking for 7 days. On any device you can also use Find my booking with your reference and email. Never share your link. For help, use the VIERCYS Concierge in the app. No real property contact is implied.</p><p style="font:20px Georgia,serif">You book the stay. We curate the experience.</p></td></tr><tr><td style="padding:22px;font-size:12px;line-height:1.6">VIERCYS concept property · Temporary editorial photography.<br>A fictional HCI classroom resort. No actual accommodation or payment is provided.</td></tr></table></td></tr></table></body></html>`;
   const content = document.match(/<body[^>]*>([\s\S]*)<\/body>/)![1];
   return render(
     createElement(
@@ -82,6 +82,44 @@ export async function emailHtml(
     ),
   );
 }
+// A successful reservation is required before reaching this sender. Bound real
+// provider traffic per destination address, including retries and new bookings.
+function reserveEmailSend(recipient: string) {
+  return transaction(() => {
+    const now = Date.now();
+    const limits: [string, number][] = [
+      ["booking-email-" + hash(recipient.toLowerCase()), 10],
+      ["booking-email-global", 200],
+    ];
+    const rows = limits.map(([key, limit]) => ({
+      key,
+      limit,
+      row: db()
+        .prepare("SELECT count,reset FROM rate_limits WHERE key=?")
+        .get(key),
+    }));
+    if (
+      rows.some(
+        ({ row, limit }) =>
+          row && Number(row.reset) > now && Number(row.count) >= limit,
+      )
+    )
+      throw new Error(
+        "Email sending limit reached. Please retry after 15 minutes.",
+      );
+    for (const { key, row } of rows) {
+      if (!row || Number(row.reset) <= now)
+        db()
+          .prepare("INSERT OR REPLACE INTO rate_limits VALUES(?,?,?)")
+          .run(key, 1, now + 15 * 60000);
+      else
+        db()
+          .prepare("UPDATE rate_limits SET count=count+1 WHERE key=?")
+          .run(key);
+    }
+  });
+}
+
 export async function sendEmails(reference: string, origin?: string) {
   db()
     .prepare(
@@ -95,28 +133,33 @@ export async function sendEmails(reference: string, origin?: string) {
     .all(reference);
   for (const event of events) {
     const id = String(event.id);
-    const booking = getBooking(reference)!;
-    const html =
-      String(event.html) ||
-      (await emailHtml(
-        booking,
-        event.kind as EmailKind,
-        manageLink(booking.email, booking.reference, origin),
-        origin,
-      ));
+    // Claim before awaiting template rendering: concurrent checkout requests
+    // must never submit the same event twice.
     const claim = db()
       .prepare(
-        "UPDATE email_attempts SET html=?,attempts=attempts+1,status='sending',error=NULL,claimed_at=? WHERE id=? AND status IN('queued','failed')",
+        "UPDATE email_attempts SET attempts=attempts+1,status='sending',error=NULL,claimed_at=? WHERE id=? AND status IN('queued','failed')",
       )
-      .run(html, Date.now(), id);
+      .run(Date.now(), id);
     if (Number(claim.changes) !== 1) continue;
     try {
-      if (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM) {
+      const booking = getBooking(reference)!;
+      const html =
+        String(event.html) ||
+        (await emailHtml(
+          booking,
+          event.kind as EmailKind,
+          manageLink(booking.email, booking.reference, origin),
+          origin,
+        ));
+      db().prepare("UPDATE email_attempts SET html=? WHERE id=?").run(html, id);
+      if (!emailConfigured()) {
         db()
           .prepare("UPDATE email_attempts SET status='demo-preview' WHERE id=?")
           .run(id);
         continue;
       }
+      const recipient = process.env.RESEND_TEST_RECIPIENT || booking.email;
+      reserveEmailSend(recipient);
       const response = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
@@ -126,8 +169,8 @@ export async function sendEmails(reference: string, origin?: string) {
         },
         body: JSON.stringify({
           from: process.env.RESEND_FROM,
-          to: [process.env.RESEND_TEST_RECIPIENT || booking.email],
-          subject: `VIERCYS ${event.kind} · ${booking.reference}`,
+          to: [recipient],
+          subject: `VIERCYS ${event.kind} \u00b7 ${booking.reference}`,
           html,
         }),
         signal: AbortSignal.timeout(15000),
@@ -137,12 +180,15 @@ export async function sendEmails(reference: string, origin?: string) {
         throw new Error(
           String(result.message || "Email provider rejected the request"),
         );
+      if (typeof result.id !== "string" || !result.id)
+        throw new Error("Email provider did not return a message reference.");
       db()
         .prepare(
           "UPDATE email_attempts SET status='accepted',provider_id=? WHERE id=?",
         )
-        .run(String(result.id), id);
+        .run(result.id, id);
     } catch (error) {
+      // Template/provider failures cannot undo the already committed booking.
       db()
         .prepare("UPDATE email_attempts SET status='failed',error=? WHERE id=?")
         .run(
@@ -188,7 +234,7 @@ export async function requestLookup(email: string, origin?: string) {
         from: process.env.RESEND_FROM,
         to: [process.env.RESEND_TEST_RECIPIENT || email],
         subject: "Your secure VIERCYS access link",
-        html: `<div style="font:16px Arial;background:#F3EEE5;color:#233F4B;padding:32px"><h1 style="font-family:Georgia">VIERCYS</h1><p>Your private access link expires in 7 days and works once.</p><p><a href="${escapeHtml(link)}">Open My VIERCYS</a></p><p>VIERCYS is a demo concept. Do not share this link.</p></div>`,
+        html: `<div style="font:16px Arial;background:#F3EEE5;color:#233F4B;padding:32px"><h1 style="font-family:Georgia">VIERCYS</h1><p>Your private access link expires in 7 days and works once.</p><p><a href="${escapeHtml(link)}">Open My VIERCYS</a></p><p>VIERCYS is a fictional HCI classroom resort. No actual accommodation or payment is provided. Do not share this link.</p></div>`,
       }),
       signal: AbortSignal.timeout(15000),
     });

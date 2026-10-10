@@ -31,6 +31,7 @@ test("architectural reveals and room chapters execute with a parked pointer", as
   const top = await rooms.evaluate(
     (el) => el.getBoundingClientRect().top + scrollY,
   );
+  const photoSize = await rooms.locator("[data-room-visual]").boundingBox();
   for (const [index, offset] of [50, 600, 1150].entries()) {
     await page.evaluate(
       (y) => scrollTo({ top: y, behavior: "instant" }),
@@ -40,7 +41,14 @@ test("architectural reveals and room chapters execute with a parked pointer", as
       "aria-selected",
       "true",
     );
-    await page.waitForTimeout(1200); // Capture the settled architectural wipe.
+    await page.waitForTimeout(1200); // Capture the settled crossfade.
+    await expect(
+      rooms.locator('[data-room-photo][data-active="true"]'),
+    ).toHaveCSS("opacity", "1");
+    const currentSize = await rooms.locator("[data-room-visual]").boundingBox();
+    // ScrollTrigger may round the pinned container by a fraction of a pixel.
+    expect(Math.abs(currentSize!.width - photoSize!.width)).toBeLessThanOrEqual(1);
+    expect(Math.abs(currentSize!.height - photoSize!.height)).toBeLessThanOrEqual(1);
     await page.screenshot({ path: testInfo.outputPath(`room-${index}.png`) });
   }
   const experiences = page.locator('[data-scene="experiences"]');

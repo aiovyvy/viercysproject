@@ -264,7 +264,7 @@ test("a booking can be completed with the keyboard alone", async ({ page }) => {
   await page.keyboard.type("keys@example.test");
   await page.getByRole("checkbox", { name: /simulated booking/ }).focus();
   await page.keyboard.press("Space");
-  await page.getByRole("button", { name: /Confirm demo reservation/ }).focus();
+  await page.getByRole("button", { name: /Confirm reservation/ }).focus();
   await page.keyboard.press("Enter");
   await expect(
     page.getByRole("heading", { name: "You're booked." }),

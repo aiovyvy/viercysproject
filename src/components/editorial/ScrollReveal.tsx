@@ -19,30 +19,16 @@ export function ScrollReveal({
     const media = gsap.matchMedia();
     media.add("(prefers-reduced-motion: no-preference)", () => {
       const context = gsap.context(() => {
-        if (scene === "courtyard" || scene === "sunset") {
-          gsap.fromTo(
-            root.current?.querySelector("img") ?? [],
-            {
-              scale: 1.18,
-              filter:
-                scene === "sunset" ? "sepia(.65) brightness(1.2)" : "none",
-            },
-            {
-              scale: 1,
-              filter: "sepia(0) brightness(1)",
-              ease: "none",
-              scrollTrigger: {
-                trigger: root.current,
-                start: "top 85%",
-                end: "top 15%",
-                scrub: true,
-              },
-            },
-          );
-        }
         gsap.fromTo(
           root.current,
-          { clipPath: "inset(8% 18% 0% 18% round 48% 48% 0 0)" },
+          {
+            clipPath:
+              scene === "sunset"
+                ? "inset(32% 0% 32% 0%)"
+                : scene === "horizon"
+                  ? "inset(0% 48% 0% 0%)"
+                  : "inset(8% 18% 0% 18% round 48% 48% 0 0)",
+          },
           {
             clipPath: "inset(0% 0% 0% 0% round 0% 0% 0 0)",
             ease: "none",

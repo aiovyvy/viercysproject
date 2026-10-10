@@ -262,7 +262,13 @@ export async function handler(
         ...searchFrom(body),
         inviteToken: body.useVoucher === true ? inviteToken || "" : undefined,
       } as BookingInput);
-      await sendEmails(booking.reference, requestOrigin(request));
+      // The reservation transaction is already committed. Even an unexpected
+      // email-processing error must not report checkout as unsuccessful.
+      await sendEmails(booking.reference, requestOrigin(request)).catch(() => {
+        console.error(
+          "Reservation saved; confirmation email processing failed.",
+        );
+      });
       const response = NextResponse.json({
         booking,
         email: emailStatuses(booking.reference),

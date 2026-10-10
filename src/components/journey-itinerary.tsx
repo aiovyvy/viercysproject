@@ -79,7 +79,7 @@ export function Journey({ reference }: { reference: string }) {
           <p>
             A personal rhythm for {stay.data.booking.adults} adults and{" "}
             {stay.data.booking.children} children. Suggestions remain separate
-            from confirmed demo extras.
+            from confirmed extras.
           </p>
           <form onSubmit={generate}>
             <div className="j-fields">
@@ -131,11 +131,11 @@ export function Journey({ reference }: { reference: string }) {
                 <strong>
                   {content.source === "ai-assisted"
                     ? "AI-assisted suggestions"
-                    : "Deterministic demo suggestions — no AI response used"}
+                    : "Suggested island itinerary"}
                 </strong>
                 <p>{content.notice}</p>
                 <p>
-                  Confirmed in demo:{" "}
+                  Included in your reservation:{" "}
                   {content.bookedExtras
                     .map((extra) => `${extra.name} × ${extra.quantity}`)
                     .join(", ") || "None"}

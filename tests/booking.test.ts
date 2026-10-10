@@ -221,7 +221,7 @@ test("email fallback persists preview, escapes guest text and remains readable w
   );
   assert.ok(html.includes("Alex &lt;script&gt;"));
   assert.ok(html.includes(booking.reference));
-  assert.ok(html.includes("Simulated amount due"));
+  assert.ok(html.includes("Reservation total"));
   assert.ok(html.includes("No real charge"));
   assert.ok(!html.includes("<script>"));
   await sendEmails(booking.reference);
@@ -486,5 +486,104 @@ test("email links and images follow the address the guest used when APP_URL is u
   } finally {
     if (saved === undefined) delete process.env.APP_URL;
     else process.env.APP_URL = saved;
+  }
+});
+
+test("confirmation sends once to the saved guest across duplicate checkout and concurrent delivery", async () => {
+  const originalFetch = globalThis.fetch;
+  const previous = [
+    process.env.RESEND_API_KEY,
+    process.env.RESEND_FROM,
+    process.env.RESEND_TEST_RECIPIENT,
+  ];
+  process.env.RESEND_API_KEY = "mock-key";
+  process.env.RESEND_FROM = "VIERCYS <sender@example.test>";
+  delete process.env.RESEND_TEST_RECIPIENT;
+  const request = make({
+    arrival: addDays(propertyToday(), 220),
+    departure: addDays(propertyToday(), 223),
+    guest: { name: "Taylor Guest", email: "Taylor@example.test" },
+  });
+  const booking = createBooking(request);
+  assert.equal(createBooking(request).reference, booking.reference);
+  let calls = 0;
+  try {
+    globalThis.fetch = async (_url, options) => {
+      calls++;
+      const payload = JSON.parse(String(options?.body));
+      assert.deepEqual(payload.to, ["taylor@example.test"]);
+      for (const content of [
+        booking.reference,
+        "Taylor Guest",
+        "Essential Room",
+        "Guests",
+        "HCI classroom simulation",
+        "no actual accommodation or payment",
+      ])
+        assert.ok(payload.html.includes(content), content);
+      return new Response(JSON.stringify({ id: "concurrent-provider-id" }));
+    };
+    await Promise.all([
+      sendEmails(booking.reference),
+      sendEmails(booking.reference),
+    ]);
+    await sendEmails(booking.reference);
+    assert.equal(calls, 1);
+    assert.equal(emailStatuses(booking.reference)[0].status, "accepted");
+    assert.equal(emailStatuses(booking.reference).length, 1);
+  } finally {
+    globalThis.fetch = originalFetch;
+    ["RESEND_API_KEY", "RESEND_FROM", "RESEND_TEST_RECIPIENT"].forEach(
+      (key, i) => {
+        if (previous[i] === undefined) delete process.env[key];
+        else process.env[key] = previous[i];
+      },
+    );
+  }
+});
+
+test("provider failures and bounded email retries never undo a saved reservation", async () => {
+  const originalFetch = globalThis.fetch;
+  const previous = [
+    process.env.RESEND_API_KEY,
+    process.env.RESEND_FROM,
+    process.env.RESEND_TEST_RECIPIENT,
+  ];
+  process.env.RESEND_API_KEY = "mock-key";
+  process.env.RESEND_FROM = "VIERCYS <sender@example.test>";
+  delete process.env.RESEND_TEST_RECIPIENT;
+  const booking = createBooking(
+    make({
+      arrival: addDays(propertyToday(), 230),
+      departure: addDays(propertyToday(), 233),
+      guest: { name: "Retry Guest", email: "bounded-retry@example.test" },
+    }),
+  );
+  let calls = 0;
+  try {
+    globalThis.fetch = async () => {
+      calls++;
+      throw new Error("Provider unavailable");
+    };
+    for (let i = 0; i < 12; i++) await sendEmails(booking.reference);
+    assert.equal(calls, 10);
+    assert.equal(emailStatuses(booking.reference)[0].status, "failed");
+    assert.match(
+      String(emailStatuses(booking.reference)[0].error),
+      /15 minutes/,
+    );
+    const saved = (await import("../src/lib/booking")).getBooking(
+      booking.reference,
+    )!;
+    assert.equal(saved.status, "confirmed");
+    assert.equal(saved.email, "bounded-retry@example.test");
+  } finally {
+    globalThis.fetch = originalFetch;
+    ["RESEND_API_KEY", "RESEND_FROM", "RESEND_TEST_RECIPIENT"].forEach(
+      (key, i) => {
+        if (previous[i] === undefined) delete process.env[key];
+        else process.env[key] = previous[i];
+      },
+    );
   }
 });

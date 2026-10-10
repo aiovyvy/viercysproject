@@ -72,8 +72,7 @@ export function MyStay() {
               ? `, ${booking.children} child${booking.children === 1 ? "" : "ren"}`
               : ""}
             <br />
-            Simulated amount due:{" "}
-            {money(booking.pricing.total, booking.currency)}
+            Reservation total: {money(booking.pricing.total, booking.currency)}
           </p>
           <Link
             href={"/booking/" + booking.reference}
@@ -106,7 +105,7 @@ export function MyStay() {
 }
 const EMAIL_STATUS: Record<string, string> = {
   "demo-preview":
-    "Email is not configured for this demo, so nothing was sent. You can view the email that would have been sent.",
+    "Email delivery is not configured, so nothing was sent. Your reservation is saved; you can preview your confirmation below.",
   queued: "Your confirmation email is waiting to be sent.",
   sending: "Your confirmation email is being sent.",
   accepted:
@@ -288,7 +287,7 @@ export function Stay({
               {cancelled
                 ? "This reservation was cancelled and its rooms released. A simulated refund was recorded."
                 : success
-                  ? `Thank you, ${booking.name}. Your demo reservation is confirmed.`
+                  ? `Thank you, ${booking.name}. Your classroom reservation is confirmed.`
                   : `Welcome back, ${booking.name}.`}
             </p>
             <p className="stay-ref-label">Booking reference</p>
@@ -350,8 +349,7 @@ export function Stay({
             {voucher && (
               <p className="stay-savings">
                 Voucher savings {money(voucher.discount, booking.currency)} ·
-                Simulated balance{" "}
-                {money(booking.pricing.total, booking.currency)}
+                Balance {money(booking.pricing.total, booking.currency)}
               </p>
             )}
           </section>
@@ -606,7 +604,7 @@ export function Stay({
               />
               <p className="stay-difference">
                 {preview.pricing.total >= booking.pricing.total
-                  ? `Additional simulated amount: ${money(preview.pricing.total - booking.pricing.total, preview.currency)}`
+                  ? `Additional amount: ${money(preview.pricing.total - booking.pricing.total, preview.currency)}`
                   : `Simulated refund: ${money(booking.pricing.total - preview.pricing.total, preview.currency)}`}
               </p>
               <div className="stay-actions">
@@ -647,7 +645,9 @@ export function Stay({
                 View the email
               </Link>
               {latestEmail &&
-                ["failed", "queued"].includes(latestEmail.status) && (
+                ["failed", "queued", "demo-preview"].includes(
+                  latestEmail.status,
+                ) && (
                   <button
                     type="button"
                     className="book-text-button"
@@ -820,7 +820,7 @@ export function Stay({
                       action("check-in", {}, "You are pre-checked in (demo).")
                     }
                   >
-                    Demo digital check-in
+                    Digital check-in
                   </button>
                 )}
             </>

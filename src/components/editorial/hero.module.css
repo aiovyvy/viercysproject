@@ -54,7 +54,12 @@
   inset: 0;
   z-index: -1;
   background:
-    linear-gradient(0deg, rgb(10 24 30 / 0.88) 0%, rgb(10 24 30 / 0.5) 42%, rgb(10 24 30 / 0) 75%),
+    linear-gradient(
+      0deg,
+      rgb(10 24 30 / 0.88) 0%,
+      rgb(10 24 30 / 0.5) 42%,
+      rgb(10 24 30 / 0) 75%
+    ),
     linear-gradient(90deg, rgb(10 24 30 / 0.45), rgb(10 24 30 / 0) 60%);
 }
 .hero[data-variant="full"] .kicker {
@@ -88,7 +93,7 @@
 
 @keyframes settle {
   from {
-    transform: scale(1.08);
+    transform: translateY(12px);
     opacity: 0.5;
   }
 }
@@ -104,20 +109,6 @@
   }
   to {
     clip-path: inset(0 0 0 0 round 999px 999px 0 0);
-  }
-}
-@supports (animation-timeline: scroll()) {
-  @media (prefers-reduced-motion: no-preference) {
-    .hero[data-variant="full"] .media img {
-      animation: drift linear both;
-      animation-timeline: scroll(root);
-      animation-range: 0 100vh;
-    }
-    @keyframes drift {
-      to {
-        transform: translateY(12%) scale(1.05);
-      }
-    }
   }
 }
 @media (prefers-reduced-motion: reduce) {

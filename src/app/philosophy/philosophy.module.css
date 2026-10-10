@@ -42,7 +42,11 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(0deg, rgb(10 24 30 / 0.8), rgb(10 24 30 / 0.1) 60%);
+  background: linear-gradient(
+    0deg,
+    rgb(10 24 30 / 0.8),
+    rgb(10 24 30 / 0.1) 60%
+  );
 }
 .natureCopy {
   grid-area: 1 / 1;
@@ -253,7 +257,10 @@
 }
 @keyframes pullBack {
   from {
-    transform: scale(1.35);
+    clip-path: inset(0 30% 0 0);
+  }
+  to {
+    clip-path: inset(0);
   }
 }
 @keyframes driftA {

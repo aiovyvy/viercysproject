@@ -73,11 +73,13 @@ test("classmate on a phone: redeem, book, reopen elsewhere, extend, cancel", asy
 
   // 4. Review: the voucher covers the stay and payment is clearly simulated.
   await expect(page.locator(".book-price-total")).toContainText("€0.00");
-  await expect(page.getByText("nothing is charged")).toBeVisible();
+  await expect(
+    page.getByText("no accommodation or payment is provided", { exact: false }),
+  ).toBeVisible();
   await page.getByLabel("Full name").fill("Jordan Classmate");
   await page.getByLabel("Email address").fill("jordan@example.test");
   await page.getByRole("checkbox", { name: /simulated booking/ }).check();
-  await page.getByRole("button", { name: /Confirm demo reservation/ }).click();
+  await page.getByRole("button", { name: /Confirm reservation/ }).click();
   await expect(
     page.getByRole("heading", { name: "You're booked." }),
   ).toBeVisible();
@@ -106,7 +108,9 @@ test("classmate on a phone: redeem, book, reopen elsewhere, extend, cancel", asy
     other.page.getByRole("heading", { name: "Review the change" }),
   ).toBeVisible();
   await other.page.getByRole("button", { name: "Confirm change" }).click();
-  await expect(other.page.getByText("Your stay has been updated")).toBeVisible();
+  await expect(
+    other.page.getByText("Your stay has been updated"),
+  ).toBeVisible();
   await expect(other.page.locator(".book-stay dd").first()).toContainText(
     "6 nights",
   );
@@ -114,7 +118,9 @@ test("classmate on a phone: redeem, book, reopen elsewhere, extend, cancel", asy
   // 7. Cancel, with a clear way forward afterwards.
   await other.page.getByText("Cancel reservation", { exact: true }).click();
   await other.page.getByRole("checkbox", { name: /I want to cancel/ }).check();
-  await other.page.getByRole("button", { name: "Confirm cancellation" }).click();
+  await other.page
+    .getByRole("button", { name: "Confirm cancellation" })
+    .click();
   await expect(
     other.page.getByRole("heading", { name: "Reservation cancelled." }),
   ).toBeVisible();
@@ -155,11 +161,14 @@ test("two phones reach for the same room: one books, the other is guided on", as
   );
   await Promise.all(
     phones.map(({ page }) =>
-      page.getByRole("button", { name: /Confirm demo reservation/ }).click(),
+      page.getByRole("button", { name: /Confirm reservation/ }).click(),
     ),
   );
   await expect
-    .poll(() => phones.filter(({ page }) => page.url().includes("/booking/")).length)
+    .poll(
+      () =>
+        phones.filter(({ page }) => page.url().includes("/booking/")).length,
+    )
     .toBe(1);
   const loser = phones.find(({ page }) => !page.url().includes("/booking/"))!;
   const alert = loser.page.locator(".book-error[role=alert]");
@@ -230,7 +239,7 @@ test("slow phone network: content first, clear loading, no double booking", asyn
   await page.getByLabel("Full name").fill("Slow Network");
   await page.getByLabel("Email address").fill("slow@example.test");
   await page.getByRole("checkbox", { name: /simulated booking/ }).check();
-  const confirm = page.getByRole("button", { name: /Confirm demo reservation/ });
+  const confirm = page.getByRole("button", { name: /Confirm reservation/ });
   await confirm.click();
   await confirm.click({ force: true, timeout: 2000 }).catch(() => {});
   await expect(

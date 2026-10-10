@@ -46,13 +46,13 @@ test("romantic booking, post-booking itinerary, email preview and staff visibili
     .fill("alex.workflow@example.test");
   await page.getByLabel(/Phone/).fill("+30 000 0000");
   await page.getByRole("checkbox", { name: /simulated booking/ }).check();
-  await page.getByRole("button", { name: "Confirm demo reservation" }).click();
+  await page.getByRole("button", { name: "Confirm reservation" }).click();
   await expect(page).toHaveURL(/booking\/VRC-/);
   await expect(
     page.getByRole("heading", { name: "You're booked." }),
   ).toBeVisible();
   await expect(
-    page.getByText("Email is not configured for this demo", { exact: false }),
+    page.getByText("Email delivery is not configured", { exact: false }),
   ).toBeVisible();
   await expect(
     page.getByText("Simulated payment, no real charge"),
@@ -62,7 +62,7 @@ test("romantic booking, post-booking itinerary, email preview and staff visibili
     .getByRole("link", { name: "Plan your visit", exact: true })
     .click();
   await page.getByRole("button", { name: "Generate my journey" }).click();
-  await expect(page.getByText(/Deterministic demo suggestions/)).toBeVisible();
+  await expect(page.getByText(/Suggested island itinerary/)).toBeVisible();
   await page
     .getByLabel("Morning — suggestions")
     .first()
@@ -86,7 +86,7 @@ test("romantic booking, post-booking itinerary, email preview and staff visibili
   await expect(
     page
       .frameLocator("iframe")
-      .getByText("Simulated amount due", { exact: true }),
+      .getByText("Reservation total", { exact: true }),
   ).toBeVisible();
   await page.screenshot({
     path: "test-results/email-mobile.png",
@@ -225,7 +225,7 @@ test("server rejects hostile dates and cross-site actions; mobile checkout works
     .getByLabel("Email address", { exact: true })
     .fill("mobile@example.test");
   await page.getByRole("checkbox", { name: /simulated booking/ }).check();
-  await page.getByRole("button", { name: "Confirm demo reservation" }).click();
+  await page.getByRole("button", { name: "Confirm reservation" }).click();
   await expect(page).toHaveURL(/booking\/VRC-/);
   expect(
     await page.evaluate(

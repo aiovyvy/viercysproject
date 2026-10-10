@@ -22,7 +22,7 @@
   position: absolute;
   inset: 0;
   opacity: 0;
-  transform: scale(1.06);
+  transform: translateY(16px);
   transition:
     opacity 0.9s ease,
     transform 1.4s cubic-bezier(0.2, 0.7, 0.2, 1);

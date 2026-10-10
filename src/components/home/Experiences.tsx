@@ -36,24 +36,30 @@ export function Experiences() {
       data-scene="experiences"
       data-chapter={active + 1}
     >
-      <div className={styles.expStage} aria-hidden="true">
-        <span className={styles.expProgress}>
-          0{active + 1} / 0{ITEMS.length}
-        </span>
-        {ITEMS.map((item, index) => (
-          <div
-            key={item.id}
-            className={styles.expPhoto}
-            data-active={index === active}
-          >
-            <Image
-              src={item.photos[0].src}
-              alt=""
-              fill
-              sizes="(max-width: 860px) 100vw, 42vw"
-            />
-          </div>
-        ))}
+      <div className={styles.expVisual}>
+        <div className={styles.expStage} aria-hidden="true">
+          {ITEMS.map((item, index) => (
+            <div
+              key={item.id}
+              className={styles.expPhoto}
+              data-active={index === active}
+            >
+              <Image
+                src={item.photos[0].src}
+                alt=""
+                fill
+                sizes="(max-width: 860px) 100vw, 42vw"
+              />
+            </div>
+          ))}
+        </div>
+        <p className={styles.expProgress} data-experience-progress>
+          <span>
+            Chapter {String(active + 1).padStart(2, "0")} /{" "}
+            {String(ITEMS.length).padStart(2, "0")}
+          </span>
+          <span>{ITEMS[active].title}</span>
+        </p>
       </div>
       <ol className={styles.expList}>
         {ITEMS.map((item, index) => (

@@ -60,7 +60,7 @@ function guideSteps(voucher: boolean) {
     {
       target: "details",
       title: "Review and confirm",
-      body: "Check the price breakdown, add your name and email, then confirm. This is a demo: no real payment is taken.",
+      body: "Check the price breakdown, add your name and email, then confirm. This is a classroom reservation: no accommodation or payment is provided.",
     },
   ];
 }
@@ -210,7 +210,7 @@ export function BookingShell({
         <h1>{title}</h1>
         {voucher.data?.active && step >= 0 && step < 3 && (
           <p className="book-voucher" role="note">
-            <strong>Demo voucher applied.</strong> {voucher.data.nights}{" "}
+            <strong>Invitation voucher applied.</strong> {voucher.data.nights}{" "}
             complimentary Essential Room nights. Extra nights and upgrades are
             optional and always shown before you confirm.
           </p>
@@ -218,7 +218,7 @@ export function BookingShell({
         {voucher.data?.unusable && step >= 0 && step < 3 && (
           <p className="book-voucher warn" role="note">
             <strong>Your voucher can&rsquo;t be used.</strong>{" "}
-            {voucher.data.message} Prices on this page are the standard demo
+            {voucher.data.message} Prices on this page are the standard room
             rate; nothing is booked or charged until you confirm.
           </p>
         )}
@@ -940,8 +940,8 @@ export function DetailsStep({
         <fieldset className="book-card">
           <legend>Your details</legend>
           <p className="book-help">
-            No account needed. We use your email only to show and manage this
-            demo booking.
+            No account needed. We use your email to send your confirmation and
+            help you manage your reservation.
           </p>
           <div className="book-field">
             <label htmlFor="guest-name">Full name</label>
@@ -1002,7 +1002,7 @@ export function DetailsStep({
                   {money(item.price, quote.data?.currency)} {item.unit} ·{" "}
                   {item.status === "pending-approval"
                     ? "request only, not charged now"
-                    : "added to the simulated total"}
+                    : "added to your total"}
                 </p>
               </div>
               <Counter
@@ -1020,8 +1020,10 @@ export function DetailsStep({
         </details>
         <div className="book-card book-payment">
           <p>
-            <strong>Demo payment — nothing is charged.</strong> We never ask for
-            card details.
+            <strong>
+              Classroom reservation — no accommodation or payment is provided.
+            </strong>{" "}
+            We never ask for card details.
           </p>
           {canCancelOnline(search.arrival) ? (
             <p>
@@ -1038,7 +1040,7 @@ export function DetailsStep({
           <label className="book-check">
             <input name="consent" type="checkbox" required />
             <span>
-              I understand this is a simulated booking and agree to the demo
+              I understand this is a simulated booking and agree to the
               cancellation policy and to storing these details for the
               demonstration.
             </span>
@@ -1052,7 +1054,7 @@ export function DetailsStep({
             </p>
             <p>
               Nothing has been booked or charged. The price above is now the
-              standard demo rate
+              standard room rate
               {quote.data
                 ? ` (${money(quote.data.pricing.total, quote.data.currency)})`
                 : ""}
@@ -1098,8 +1100,8 @@ export function DetailsStep({
             {busy
               ? "Confirming…"
               : quote.data && ready
-                ? `Confirm demo reservation · ${money(quote.data.pricing.total, quote.data.currency)}`
-                : "Confirm demo reservation"}
+                ? `Confirm reservation · ${money(quote.data.pricing.total, quote.data.currency)}`
+                : "Confirm reservation"}
           </button>
         </div>
       </form>
@@ -1139,7 +1141,7 @@ export function PriceSummary({
         {voucher && (
           <div className="book-price-voucher">
             <dt>
-              Demo voucher
+              Invitation voucher
               <span>
                 {voucher.coveredNights} night
                 {voucher.coveredNights === 1 ? "" : "s"} at the Essential rate (
@@ -1175,7 +1177,7 @@ export function PriceSummary({
           </div>
         )}
         <div className="book-price-total">
-          <dt>Simulated amount due</dt>
+          <dt>Reservation total</dt>
           <dd>{money(pricing.total, currency)}</dd>
         </div>
       </dl>

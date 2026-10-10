@@ -105,7 +105,7 @@ test("a party larger than four is guided to more rooms", async ({ page }) => {
   await expect(cont).toBeEnabled();
   await cont.click();
   await expect(page).toHaveURL(/\/book\/details\?.*roomIds=S-\d+,S-\d+/);
-  await expect(page.getByText("Simulated amount due")).toBeVisible();
+  await expect(page.getByText("Reservation total")).toBeVisible();
 });
 
 test("mobile and tablet navigation have no overflow and companion access", async ({

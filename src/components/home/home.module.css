@@ -131,11 +131,11 @@
 @keyframes arrive {
   from {
     clip-path: inset(10% 30% 0 30% round 999px 999px 0 0);
-    transform: scale(1.12);
+    transform: translateY(12px);
   }
   to {
     clip-path: inset(0 0 0 0 round 0);
-    transform: scale(1);
+    transform: none;
   }
 }
 @keyframes lift {
@@ -298,66 +298,46 @@
   gap: 48px;
   align-items: end;
 }
-.slats {
-  display: flex;
-  gap: 12px;
-  height: min(70vh, 640px);
-  min-height: 460px;
-}
-.slat {
-  position: relative;
-  flex: 1;
+.roomGallery {
   min-width: 0;
-  border: 0;
-  padding: 0;
+}
+.roomVisual {
+  position: relative;
+  height: min(62vh, 600px);
+  min-height: 360px;
   overflow: hidden;
-  border-radius: 999px 999px 0 0;
-  background: var(--limestone);
-  color: #fff;
-  cursor: pointer;
-  transition: flex 0.9s cubic-bezier(0.2, 0.7, 0.2, 1);
+  border-radius: 120px 0 0 0;
 }
-.slat[aria-selected="true"] {
-  flex: 4.2;
-  cursor: default;
-}
-.slat img {
-  transition:
-    transform 1.2s cubic-bezier(0.2, 0.7, 0.2, 1),
-    filter 0.6s;
-}
-.slat[aria-selected="false"] img {
-  filter: saturate(0.7) brightness(0.8);
-}
-.slat:hover img {
-  transform: scale(1.04);
-}
-.slat::after {
-  content: "";
+.roomPhoto {
   position: absolute;
   inset: 0;
-  background: linear-gradient(0deg, rgb(10 24 30 / 0.55), transparent 50%);
+  opacity: 0;
+  transition: opacity 0.8s ease;
 }
-.slatName {
-  position: absolute;
-  z-index: 1;
-  left: 50%;
-  bottom: 28px;
+.roomPhoto[data-active="true"] {
+  opacity: 1;
+}
+.roomTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 16px;
+}
+.roomTab {
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid #233f4b40;
+  background: transparent;
+  color: var(--deep);
+  font: inherit;
+  cursor: pointer;
+}
+.roomTab[aria-selected="true"] {
+  background: var(--deep);
+  color: white;
+}
+.roomTab span {
   font-family: var(--serif);
-  font-size: 26px;
-  white-space: nowrap;
-  transform: translateX(-50%) rotate(-90deg);
-  transform-origin: center;
-  translate: 0 -80px;
-  transition:
-    transform 0.6s,
-    translate 0.6s;
-}
-.slat[aria-selected="true"] .slatName {
-  left: 32px;
-  transform: none;
-  translate: none;
-  font-size: 34px;
 }
 .roomPanel {
   padding-bottom: 8px;
@@ -492,17 +472,7 @@
   overflow: hidden;
 }
 .horizonPhoto img {
-  filter: grayscale(1) contrast(0.9);
-  opacity: 0.75;
-  transition:
-    filter 0.8s,
-    opacity 0.8s,
-    transform 1.2s;
-}
-.horizonList li:hover img {
-  filter: none;
   opacity: 1;
-  transform: scale(1.04);
 }
 .horizonList p {
   margin-top: 12px;
@@ -527,9 +497,12 @@
   gap: 6vw;
   align-items: start;
 }
-.expStage {
+.expVisual {
   position: sticky;
   top: 120px;
+}
+.expStage {
+  position: relative;
   aspect-ratio: 4 / 5;
   max-height: 640px;
   overflow: hidden;
@@ -539,7 +512,7 @@
   position: absolute;
   inset: 0;
   opacity: 0;
-  transform: scale(1.08);
+  transform: translateX(24px);
   transition:
     opacity 0.7s,
     transform 1.2s cubic-bezier(0.2, 0.7, 0.2, 1);
@@ -730,9 +703,7 @@
   .roomPanel {
     animation: none;
   }
-  .slat,
-  .slat img,
-  .slatName,
+  .roomPhoto,
   .expPhoto,
   .expList li,
   .horizonPhoto img {
@@ -749,9 +720,6 @@
 /* ---------- Tablet ---------- */
 @media (max-width: 1100px) {
   .heroCopy {
-    grid-template-columns: 1fr;
-  }
-  .showcase {
     grid-template-columns: 1fr;
   }
   .horizons {
@@ -816,31 +784,6 @@
   .experiencesSection {
     padding: 88px 20px;
   }
-  .slats {
-    flex-direction: column;
-    height: auto;
-    min-height: 0;
-    gap: 8px;
-  }
-  .slat {
-    flex: none;
-    height: 96px;
-    border-radius: 48px 48px 0 0;
-    transition: height 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
-  }
-  .slat[aria-selected="true"] {
-    flex: none;
-    height: 340px;
-    border-radius: 999px 999px 0 0;
-  }
-  .slatName,
-  .slat[aria-selected="true"] .slatName {
-    left: 24px;
-    bottom: 22px;
-    transform: none;
-    translate: none;
-    font-size: 26px;
-  }
   .destination {
     padding: 88px 20px;
   }
@@ -875,7 +818,7 @@
   .experiences {
     grid-template-columns: 1fr;
   }
-  .expStage {
+  .expVisual {
     display: none;
   }
   .expList li {
@@ -984,27 +927,18 @@
   display: none;
 }
 .expProgress {
-  position: absolute;
-  z-index: 2;
-  left: 28px;
-  bottom: 24px;
-  color: white;
-  background: #102b38;
-  padding: 8px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin: 16px 0 0;
+  color: var(--deep);
+  font-size: 13px;
+  letter-spacing: 0.04em;
 }
 .expList li {
   min-height: 52vh;
   align-content: center;
-}
-.expPhoto {
-  clip-path: inset(0 0 100% 0);
-  transition:
-    clip-path 0.8s,
-    opacity 0.8s,
-    transform 1.2s;
-}
-.expPhoto[data-active="true"] {
-  clip-path: inset(0);
 }
 .finale {
   height: auto;
@@ -1029,5 +963,12 @@
 @media (prefers-reduced-motion: reduce) {
   .expPhoto {
     clip-path: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .expPhoto {
+    transform: none;
+    transition: none;
   }
 }

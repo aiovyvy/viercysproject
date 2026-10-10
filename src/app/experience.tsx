@@ -54,11 +54,31 @@ export default function Home() {
     const mm = gsap.matchMedia();
     mm.add("(prefers-reduced-motion: no-preference)", () => {
       const ctx = gsap.context(() => {
+        const horizonPhotos = gsap.utils.toArray<HTMLElement>(
+          "[data-horizon-photo]",
+        );
+        if (horizonPhotos.length) {
+          gsap.fromTo(
+            horizonPhotos,
+            { y: 64, clipPath: "inset(45% 0% 0% 0%)" },
+            {
+              y: 0,
+              clipPath: "inset(0% 0% 0% 0%)",
+              stagger: 0.16,
+              ease: "none",
+              scrollTrigger: {
+                trigger: "[data-horizons]",
+                start: "top 85%",
+                end: "top 25%",
+                scrub: true,
+              },
+            },
+          );
+        }
         // Exterior approach: the photo recedes and the copy lifts as the
         // visitor scrolls toward the arch passage.
         gsap.to("[data-hero-photo]", {
           yPercent: 14,
-          scale: 1.06,
           ease: "none",
           scrollTrigger: {
             trigger: "[data-hero]",
@@ -319,7 +339,7 @@ export default function Home() {
               </Link>
             </div>
           </div>
-          <div className={home.horizons}>
+          <div className={home.horizons} data-horizons>
             <div className={home.horizonsHead}>
               <h3>Next horizons</h3>
               <p>
@@ -340,7 +360,7 @@ export default function Home() {
                 {DESTINATIONS.filter((place) => !place.bookable).map(
                   (place) => (
                     <li key={place.name}>
-                      <div className={home.horizonPhoto}>
+                      <div className={home.horizonPhoto} data-horizon-photo>
                         <Image
                           src={place.photo.src}
                           alt={place.photo.alt}

@@ -10,8 +10,8 @@ import { ScrollStory } from "@/components/editorial/ScrollStory";
 import styles from "./home.module.css";
 
 /**
- * Scroll selects architectural room panels on desktop. The chosen panel opens
- * wide; the others stay as slender arches. Tabs follow the ARIA pattern, so
+ * Scroll crossfades a fixed-size room composition on desktop.
+ * Tabs follow the ARIA pattern, so
  * arrow keys, Home and End move between rooms.
  */
 export function RoomsShowcase() {
@@ -62,14 +62,38 @@ export function RoomsShowcase() {
   return (
     <>
       <div ref={stage} className={styles.showcase} data-scene="rooms">
-        <div
-          className={styles.slats}
-          role="tablist"
-          aria-label="Rooms and suites"
-        >
-          {CATEGORIES.map((item, index) => {
-            const photo = ROOM_EDITORIAL[item.id].heroPhoto;
-            return (
+        <div className={styles.roomGallery}>
+          <div
+            className={styles.roomVisual}
+            data-room-visual
+            aria-hidden="true"
+          >
+            {CATEGORIES.map((item, index) => {
+              const photo = ROOM_EDITORIAL[item.id].heroPhoto;
+              return (
+                <div
+                  key={item.id}
+                  className={styles.roomPhoto}
+                  data-room-photo
+                  data-active={active === index}
+                >
+                  <Image
+                    src={photo.src}
+                    alt=""
+                    fill
+                    sizes="(max-width: 860px) 100vw, 55vw"
+                    style={{ objectPosition: photo.focus }}
+                  />
+                </div>
+              );
+            })}
+          </div>
+          <div
+            className={styles.roomTabs}
+            role="tablist"
+            aria-label="Rooms and suites"
+          >
+            {CATEGORIES.map((item, index) => (
               <button
                 key={item.id}
                 type="button"
@@ -78,21 +102,15 @@ export function RoomsShowcase() {
                 aria-controls={`${id}-panel`}
                 aria-selected={active === index}
                 tabIndex={active === index ? 0 : -1}
-                className={styles.slat}
+                className={styles.roomTab}
                 onClick={() => setActive(index)}
                 onKeyDown={(event) => keyboard(event, index)}
               >
-                <Image
-                  src={photo.src}
-                  alt=""
-                  fill
-                  sizes="(max-width: 860px) 100vw, 60vw"
-                  style={{ objectPosition: photo.focus }}
-                />
-                <span className={styles.slatName}>{item.name}</span>
+                <span aria-hidden="true">0{index + 1} </span>
+                {item.name}
               </button>
-            );
-          })}
+            ))}
+          </div>
         </div>
         <div
           role="tabpanel"
