@@ -50,6 +50,7 @@ export default function ArchitecturalJourney() {
           end: () =>
             "+=" + window.innerHeight * (window.innerWidth < 900 ? 1.8 : 2.5),
           pin: true,
+          refreshPriority: 10,
           scrub: 0.65,
           invalidateOnRefresh: true,
           onUpdate: () => renderFrame.current?.(),

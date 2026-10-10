@@ -5,6 +5,7 @@ import { DESTINATIONS } from "@/lib/destinations";
 import { EditorialHero } from "@/components/editorial/EditorialHero";
 import ui from "@/components/editorial/ui.module.css";
 import sections from "@/components/editorial/sections.module.css";
+import { ScrollReveal } from "@/components/editorial/ScrollReveal";
 import styles from "./destinations.module.css";
 
 export const metadata = {
@@ -63,7 +64,10 @@ export default function Destinations() {
               data-open={place.bookable}
               aria-labelledby={`${place.slug}-title`}
             >
-              <div className={styles.panelPhoto}>
+              <ScrollReveal
+                scene="destination-window"
+                className={styles.panelPhoto}
+              >
                 <Image
                   src={place.photo.src}
                   alt={place.photo.alt}
@@ -71,7 +75,7 @@ export default function Destinations() {
                   sizes="100vw"
                   preload={at === 0}
                 />
-              </div>
+              </ScrollReveal>
               <div className={styles.card}>
                 <p className={ui.kicker}>
                   0{at + 1} · {place.region}

@@ -7,6 +7,7 @@ import { ChapterRail } from "@/components/editorial/ChapterRail";
 import { SwipeGallery } from "@/components/editorial/SwipeGallery";
 import ui from "@/components/editorial/ui.module.css";
 import sections from "@/components/editorial/sections.module.css";
+import { ScrollReveal } from "@/components/editorial/ScrollReveal";
 import styles from "./experiences.module.css";
 
 export const metadata = {
@@ -60,9 +61,8 @@ export default function ExperiencesPage() {
               </li>
               <li>
                 <strong>Some are instant, some are requests</strong>
-                Breakfast and transfers are added straight away. Dinner,
-                sailing and spa are requests our team confirms before you
-                arrive.
+                Breakfast and transfers are added straight away. Dinner, sailing
+                and spa are requests our team confirms before you arrive.
               </li>
               <li>
                 <strong>Clear prices</strong>
@@ -81,9 +81,12 @@ export default function ExperiencesPage() {
             data-flip={index % 2 === 1}
             aria-labelledby={`${item.id}-title`}
           >
-            <div className={styles.photos}>
-              <SwipeGallery photos={item.photos} label={`${item.title} photos`} />
-            </div>
+            <ScrollReveal scene="experience-chapter" className={styles.photos}>
+              <SwipeGallery
+                photos={item.photos}
+                label={`${item.title} photos`}
+              />
+            </ScrollReveal>
             <div className={styles.copy}>
               <p className={ui.kicker}>
                 {String(index + 1).padStart(2, "0")} ·{" "}

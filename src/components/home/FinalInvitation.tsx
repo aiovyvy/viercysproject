@@ -3,6 +3,7 @@ import Link from "next/link";
 import { BookLink } from "@/app/experience";
 import { CATEGORIES, money } from "@/lib/catalog";
 import { VOUCHER } from "@/lib/policy";
+import { ScrollReveal } from "@/components/editorial/ScrollReveal";
 import styles from "./home.module.css";
 
 /**
@@ -18,14 +19,14 @@ export function FinalInvitation() {
       aria-labelledby="closing-title"
     >
       <div className={styles.finaleSticky}>
-        <div className={styles.finaleMedia}>
+        <ScrollReveal scene="sunset" className={styles.finaleMedia}>
           <Image
             src="/images/santorini/blue-hour.jpg"
             alt="Oia's cliffside houses lit at blue hour above the Aegean"
             fill
             sizes="100vw"
           />
-        </div>
+        </ScrollReveal>
         <div className={styles.finaleCopy}>
           <p className={styles.kicker}>The Aegean is waiting</p>
           <h2 id="closing-title">
@@ -52,8 +53,8 @@ export function FinalInvitation() {
               arrival
             </li>
             <li>
-              <strong>Invited?</strong> {VOUCHER.nights} Essential Room nights are
-              complimentary when you redeem your invitation
+              <strong>Invited?</strong> {VOUCHER.nights} Essential Room nights
+              are complimentary when you redeem your invitation
             </li>
           </ul>
           <p className={styles.finaleNote}>

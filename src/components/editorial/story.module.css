@@ -115,3 +115,22 @@
     overflow: hidden;
   }
 }
+
+@media (prefers-reduced-motion: no-preference) {
+  .photo {
+    clip-path: inset(0 0 100% 0);
+    transition:
+      clip-path 0.85s cubic-bezier(0.2, 0.7, 0.2, 1),
+      opacity 0.8s,
+      transform 1.2s;
+  }
+  .photo[data-active="true"] {
+    clip-path: inset(0);
+  }
+}
+.chapter {
+  opacity: 1;
+}
+.chapter[data-active="true"] h3 {
+  color: var(--story-mark);
+}

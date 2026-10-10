@@ -9,6 +9,8 @@ import { StaySearch } from "@/components/editorial/StaySearch";
 import { RoomsShowcase } from "@/components/home/RoomsShowcase";
 import { Experiences } from "@/components/home/Experiences";
 import { FinalInvitation } from "@/components/home/FinalInvitation";
+import { ScrollReveal } from "@/components/editorial/ScrollReveal";
+import { ScrollStory } from "@/components/editorial/ScrollStory";
 import home from "@/components/home/home.module.css";
 import { DESTINATIONS } from "@/lib/destinations";
 import ArchitecturalJourney from "@/components/cinematic/ArchitecturalJourney";
@@ -122,8 +124,6 @@ export default function Home() {
           </div>
         </section>
 
-        <ArchitecturalJourney />
-
         <section
           id="reservation"
           className={home.plan}
@@ -163,6 +163,26 @@ export default function Home() {
           </div>
         </section>
 
+        <ArchitecturalJourney />
+        <ScrollReveal scene="courtyard" className={home.courtyardReveal}>
+          <div className={home.courtyardImage}>
+            <Image
+              src="/images/architecture.jpg"
+              alt="Limestone terraces opening toward the Aegean"
+              fill
+              sizes="100vw"
+            />
+          </div>
+          <div className={home.courtyardCopy}>
+            <p className={home.kicker}>You have arrived</p>
+            <h2>
+              Stone, sunlight.
+              <br />
+              <em>Space to breathe.</em>
+            </h2>
+          </div>
+        </ScrollReveal>
+
         <section
           id="story"
           className={home.story}
@@ -180,54 +200,43 @@ export default function Home() {
               Aegean. We believe true luxury is the space to slow down, and the
               freedom to feel completely somewhere else.
             </p>
-            <ol className={home.principles}>
-              <li>
-                <span aria-hidden="true">I</span>
-                <p>
-                  <strong>Shaped by the island</strong>
-                  Thick walls, deep shade and arches that frame the sea, the way
-                  Cycladic houses have always been built.
-                </p>
-              </li>
-              <li>
-                <span aria-hidden="true">II</span>
-                <p>
-                  <strong>Slow by design</strong>
-                  Twenty rooms, no crowds, and days without a timetable.
-                </p>
-              </li>
-              <li>
-                <span aria-hidden="true">III</span>
-                <p>
-                  <strong>Personal by choice</strong>
-                  Thoughtful hospitality that notices, and then gives you room.
-                </p>
-              </li>
-            </ol>
             <Link href="/about" className={home.textLink}>
               Read the VIERCYS story <span aria-hidden="true">→</span>
             </Link>
           </div>
-          <div className={home.storyArt} aria-hidden="true">
-            <div className={home.storyTall}>
-              <Image
-                src="/images/santorini/white-stair.jpg"
-                alt=""
-                fill
-                sizes="(max-width: 860px) 70vw, 30vw"
-              />
-            </div>
-            <div className={home.storySmall}>
-              <Image
-                src="/images/santorini/stone-door.jpg"
-                alt=""
-                fill
-                sizes="(max-width: 860px) 45vw, 18vw"
-              />
-            </div>
-            <p className={home.storyCaption}>
-              Lime, stone and light · Santorini
-            </p>
+          <div className={home.philosophyChapters}>
+            <ScrollStory
+              tone="light"
+              chapters={[
+                {
+                  title: "Shaped by the island",
+                  label: "Earth",
+                  body: "Thick walls, deep shade and arches that frame the sea, the way Cycladic houses have always been built.",
+                  photo: {
+                    src: "/images/santorini/stone-door.jpg",
+                    alt: "Volcanic stone and a shaded doorway",
+                  },
+                },
+                {
+                  title: "Slow by design",
+                  label: "Sea",
+                  body: "Twenty rooms, no crowds, and days without a timetable.",
+                  photo: {
+                    src: "/images/santorini/sea-terrace.jpg",
+                    alt: "An open terrace above the Aegean",
+                  },
+                },
+                {
+                  title: "Personal by choice",
+                  label: "Hospitality",
+                  body: "Thoughtful hospitality that notices, and then gives you room.",
+                  photo: {
+                    src: "/images/santorini/caldera-table.jpg",
+                    alt: "A terrace table prepared for two",
+                  },
+                },
+              ]}
+            />
           </div>
         </section>
 
@@ -250,19 +259,37 @@ export default function Home() {
         </section>
 
         <section
+          id="experiences"
+          className={home.experiencesSection}
+          aria-labelledby="experiences-title"
+        >
+          <header className={home.sectionHead}>
+            <p className={home.kicker}>Experiences</p>
+            <h2 id="experiences-title">
+              The island, <em>at your pace.</em>
+            </h2>
+            <p>
+              Add any of these while you book. Some are confirmed instantly;
+              others are requests our team confirms before your stay.
+            </p>
+          </header>
+          <Experiences />
+        </section>
+
+        <section
           id="destinations"
           className={home.destination}
           aria-labelledby="destination-title"
         >
           <div className={home.spotlight}>
-            <div className={home.spotlightPhoto}>
+            <ScrollReveal scene="horizon" className={home.spotlightPhoto}>
               <Image
                 src="/images/santorini/fira-sunset.jpg"
                 alt="The sun setting over the caldera, seen from Fira"
                 fill
                 sizes="(max-width: 860px) 100vw, 45vw"
               />
-            </div>
+            </ScrollReveal>
             <div className={home.spotlightCopy}>
               <p className={home.kicker}>Our first address · Bookable now</p>
               <h2 id="destination-title">
@@ -331,24 +358,6 @@ export default function Home() {
               </ul>
             </div>
           </div>
-        </section>
-
-        <section
-          id="experiences"
-          className={home.experiencesSection}
-          aria-labelledby="experiences-title"
-        >
-          <header className={home.sectionHead}>
-            <p className={home.kicker}>Experiences</p>
-            <h2 id="experiences-title">
-              The island, <em>at your pace.</em>
-            </h2>
-            <p>
-              Add any of these while you book. Some are confirmed instantly;
-              others are requests our team confirms before your stay.
-            </p>
-          </header>
-          <Experiences />
         </section>
 
         <FinalInvitation />
