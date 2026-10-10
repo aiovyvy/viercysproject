@@ -1,0 +1,13 @@
+﻿# Booking confirmation PDF and sharing
+
+Guests can save a PDF on the successful booking page, its print confirmation page, and their existing My VIERCYS booking card. Share Confirmation and Copy Confirmation Details are available on the booking confirmation page. Email delivery is independent; no sending domain or additional environment variable is required for these features.
+
+The authenticated GET `/api/bookings/[reference]/confirmation.pdf` reads the current booking through the same authorization used for viewing a booking. A reference, email query parameter, or submitted details do not grant access. Authorized staff can also retrieve the document. Responses are private, not cached, and downloaded as `VIERCYS-Confirmation-[reference].pdf`. Current cancelled bookings produce a cancelled document. No database migration or background process is introduced.
+
+The PDF uses pdf-lib, a bundled OFL-licensed Noto Sans font for guest names and the peso symbol, and vector architectural decoration. The bundled font is explicitly included in Next.js output tracing for Vercel. Complimentary zero-balance invitations display ₱0.00; upgrades, extras and other nonzero amounts retain the existing stored currency and totals. No currency conversion is performed.
+
+Native sharing sends a short classroom booking summary and the public hotel homepage. It excludes the guest identity, contact details, physical room number, invitation tokens and private booking access links. The browser's share dialog chooses the destination. Unsupported browsers offer clipboard copying, with selectable text if clipboard access is unavailable. The downloaded PDF contains the guest name and room details, so guests choose whether to share that file themselves.
+
+On a phone, complete an invitation reservation, then tap **Download PDF Confirmation**. Android normally downloads the file; iPhone Safari may preview it, where the system Share menu offers **Save to Files**. Tap **Share Confirmation** to open a supported phone's share sheet, or use **Copy Confirmation Details**. Reopen My VIERCYS in the same authorized browser to download again. Existing secure booking lookup remains necessary when using another browser; sharing a summary does not grant booking access.
+
+Verification uses isolated local test databases and mocked email failures, never existing production bookings. Tests cover individual/shared complimentary invitations, actual PDF download and extracted contents, unauthorized requests, client-data tampering, native sharing, cancellation, copy/manual fallback, mobile overflow and My VIERCYS access.

@@ -60,7 +60,7 @@ test("romantic booking, post-booking itinerary, email preview and staff visibili
   await page.getByRole("button", { name: "Confirm reservation" }).click();
   await expect(page).toHaveURL(/booking\/VRC-/);
   await expect(
-    page.getByRole("heading", { name: "You're booked." }),
+    page.getByRole("heading", { name: "Your Stay Is Confirmed" }),
   ).toBeVisible();
   await expect(
     page.getByText("Email delivery is not configured", { exact: false }),

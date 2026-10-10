@@ -81,7 +81,7 @@ test("classmate on a phone: redeem, book, reopen elsewhere, extend, cancel", asy
   await page.getByRole("checkbox", { name: /simulated booking/ }).check();
   await page.getByRole("button", { name: /Confirm reservation/ }).click();
   await expect(
-    page.getByRole("heading", { name: "You're booked." }),
+    page.getByRole("heading", { name: "Your Stay Is Confirmed" }),
   ).toBeVisible();
   const reference = (await page.locator(".stay-ref").innerText()).trim();
   expect(await noSideways(page)).toBe(true);
@@ -243,7 +243,7 @@ test("slow phone network: content first, clear loading, no double booking", asyn
   await confirm.click();
   await confirm.click({ force: true, timeout: 2000 }).catch(() => {});
   await expect(
-    page.getByRole("heading", { name: "You're booked." }),
+    page.getByRole("heading", { name: "Your Stay Is Confirmed" }),
   ).toBeVisible({ timeout: 15000 });
   expect(posts).toBe(1);
   await context.close();

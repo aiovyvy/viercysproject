@@ -213,7 +213,7 @@ test("losing a voucher race re-prices at the standard rate and never charges sil
     .getByRole("button", { name: "Confirm reservation · €540.00" })
     .click();
   await expect(
-    loser.getByRole("heading", { name: "You're booked." }),
+    loser.getByRole("heading", { name: "Your Stay Is Confirmed" }),
   ).toBeVisible();
   for (const { ctx } of phones) await ctx.close();
 });

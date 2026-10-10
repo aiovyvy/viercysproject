@@ -13,7 +13,9 @@ const nextConfig: NextConfig = {
       "./debug.log",
     ],
   },
-  outputFileTracingIncludes: { "/*": ["./database/sqlite.sql"] },
+  outputFileTracingIncludes: {
+    "/*": ["./database/sqlite.sql", "./src/assets/fonts/*"],
+  },
   headers() {
     return [
       {

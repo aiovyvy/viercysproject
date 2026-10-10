@@ -66,7 +66,7 @@ test("checkout shows the real cancellation date, and warns on short notice", asy
   await page.getByRole("checkbox", { name: /simulated booking/ }).check();
   await page.getByRole("button", { name: /Confirm reservation/ }).click();
   await expect(
-    page.getByRole("heading", { name: "You're booked." }),
+    page.getByRole("heading", { name: "Your Stay Is Confirmed" }),
   ).toBeVisible();
   await page.getByText("Cancel reservation", { exact: true }).click();
   await expect(

@@ -78,7 +78,7 @@ test("phone: invitation -> guide -> 3 nights -> Essential -> confirmation -> sta
 
   await expect(page).toHaveURL(/\/booking\/VRC-[0-9A-F]+\?success=1/);
   await expect(
-    page.getByRole("heading", { name: "You're booked." }),
+    page.getByRole("heading", { name: "Your Stay Is Confirmed" }),
   ).toBeVisible();
   const reference = (await page.locator(".stay-ref").innerText()).trim();
   await expect(page.getByText(/Voucher savings €540\.00/)).toBeVisible();
@@ -87,7 +87,7 @@ test("phone: invitation -> guide -> 3 nights -> Essential -> confirmation -> sta
   ).toBeVisible();
   for (const name of ["Extend stay", "Change dates"])
     await expect(page.getByRole("button", { name })).toBeVisible();
-  for (const name of ["Print receipt", "Back to home"])
+  for (const name of ["Print confirmation", "Back to home"])
     await expect(page.getByRole("link", { name })).toBeVisible();
   expect(
     await page.evaluate(
@@ -151,7 +151,7 @@ test("voucher pricing for 5 Signature nights and a guest extension", async ({
   await page.getByRole("checkbox", { name: /simulated booking/ }).check();
   await page.getByRole("button", { name: "Confirm reservation" }).click();
   await expect(
-    page.getByRole("heading", { name: "You're booked." }),
+    page.getByRole("heading", { name: "Your Stay Is Confirmed" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Extend stay" }).click();
   await page
@@ -213,7 +213,7 @@ test("works when phones reach the laptop by IP over plain http", async ({
   await page.getByRole("checkbox", { name: /simulated booking/ }).check();
   await page.getByRole("button", { name: "Confirm reservation" }).click();
   await expect(
-    page.getByRole("heading", { name: "You're booked." }),
+    page.getByRole("heading", { name: "Your Stay Is Confirmed" }),
   ).toBeVisible();
   // A genuinely foreign origin is still refused.
   expect(

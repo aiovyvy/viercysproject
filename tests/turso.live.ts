@@ -78,7 +78,7 @@ test("Turso browser booking is saved without email; duplicate checkout, staff an
   const saved = await response.json();
   references.push(saved.booking.reference);
   await expect(
-    page.getByRole("heading", { name: "You're booked." }),
+    page.getByRole("heading", { name: "Your Stay Is Confirmed" }),
   ).toBeVisible();
   await expect(page.locator(".stay-ref")).toHaveText(saved.booking.reference);
   expect(saved.email[0].status).toBe("demo-preview");

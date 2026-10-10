@@ -1,5 +1,7 @@
 "use client";
 import { useState } from "react";
+import { ConfirmationActions } from "./confirmation-actions";
+import { confirmationAmount } from "@/lib/confirmation";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Shell, useData, api, Feedback, ApiError } from "./journey";
@@ -80,6 +82,7 @@ export function MyStay() {
           >
             View booking
           </Link>
+          <ConfirmationActions booking={booking} sharing={false} />
         </article>
       ))}
       {bookings.length > 0 && (
@@ -248,9 +251,7 @@ export function Stay({
           ? "Your booking is private."
           : cancelled
             ? "Reservation cancelled."
-            : success
-              ? "You're booked."
-              : "Your stay."
+            : "Your Stay Is Confirmed"
       }
       back={success ? undefined : { href: "/my-stay", label: "My VIERCYS" }}
     >
@@ -283,6 +284,7 @@ export function Stay({
             className={cancelled ? "stay-banner cancelled" : "stay-banner"}
             aria-label="Booking reference"
           >
+            <p className="confirmation-brand">VIERCYS Hotels &amp; Resorts</p>
             <p>
               {cancelled
                 ? "This reservation was cancelled and its rooms released. A simulated refund was recorded."
@@ -308,11 +310,17 @@ export function Stay({
             <h2 id="stay-summary">VIERCYS Santorini</h2>
             <dl className="book-stay">
               <div>
-                <dt>Dates</dt>
+                <dt>Check-in</dt>
+                <dd>{formatDate(booking.arrival)}</dd>
+              </div>
+              <div>
+                <dt>Check-out</dt>
+                <dd>{formatDate(booking.departure)}</dd>
+              </div>
+              <div>
+                <dt>Duration</dt>
                 <dd>
-                  {formatDate(booking.arrival)} –{" "}
-                  {formatDate(booking.departure)} · {stayNights} night
-                  {stayNights === 1 ? "" : "s"}
+                  {stayNights} night{stayNights === 1 ? "" : "s"}
                 </dd>
               </div>
               <div>
@@ -347,12 +355,22 @@ export function Stay({
               )}
             </dl>
             {voucher && (
+              <p className="book-voucher">Complimentary invitation applied.</p>
+            )}
+            <div className="confirmation-total">
+              <span>
+                {cancelled ? "Reservation total" : "Total amount due"}
+              </span>
+              <strong>{confirmationAmount(booking)}</strong>
+            </div>
+            {voucher && (
               <p className="stay-savings">
                 Voucher savings {money(voucher.discount, booking.currency)} ·
                 Balance {money(booking.pricing.total, booking.currency)}
               </p>
             )}
           </section>
+          <ConfirmationActions booking={booking} />
           {cancelled && (
             <nav className="stay-actions" aria-label="Next steps">
               <Link className="book-button primary" href="/book">
@@ -390,7 +408,7 @@ export function Stay({
                 className="book-button"
                 href={`/booking/${reference}/receipt`}
               >
-                Print receipt
+                Print confirmation
               </Link>
               <Link className="book-button" href="/">
                 Back to home
@@ -996,7 +1014,7 @@ export function Receipt({ reference }: { reference: string }) {
   const booking = result.data?.booking;
   return (
     <Shell
-      title="Receipt."
+      title="Booking confirmation."
       back={{ href: "/booking/" + reference, label: "Your booking" }}
     >
       <Feedback error={result.error} loading={result.loading} />
@@ -1019,16 +1037,17 @@ export function Receipt({ reference }: { reference: string }) {
           </p>
           <p className="receipt-notice">
             {bookingStatus(booking)}. VIERCYS is a fictional property; this
-            receipt is not proof of a real payment.
+            booking confirmation is not a tax invoice or proof of payment.
           </p>
           <PriceSummary pricing={booking.pricing} currency={booking.currency} />
+          <ConfirmationActions booking={booking} />
           <div className="j-actions">
             <button
               type="button"
               className="j-button"
               onClick={() => window.print()}
             >
-              Print / save as PDF
+              Print confirmation
             </button>
             <Link className="j-button secondary" href={"/booking/" + reference}>
               Back to your stay

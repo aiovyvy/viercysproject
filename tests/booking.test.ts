@@ -320,6 +320,17 @@ test("Resend errors persist; retries reuse the same provider key and HTML; accep
     };
     await sendEmails(booking.reference);
     assert.equal((await emailStatuses(booking.reference))[0].status, "failed");
+    const { bookingConfirmationPdf } =
+      await import("../src/lib/confirmation-pdf");
+    const { getBooking } = await import("../src/lib/booking");
+    const saved = (await getBooking(booking.reference))!;
+    assert.equal(saved.status, "confirmed");
+    assert.equal(
+      Buffer.from(await bookingConfirmationPdf(saved))
+        .subarray(0, 5)
+        .toString(),
+      "%PDF-",
+    );
     await sendEmails(booking.reference);
     assert.equal(
       (await emailStatuses(booking.reference))[0].status,

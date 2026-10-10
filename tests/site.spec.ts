@@ -267,6 +267,6 @@ test("a booking can be completed with the keyboard alone", async ({ page }) => {
   await page.getByRole("button", { name: /Confirm reservation/ }).focus();
   await page.keyboard.press("Enter");
   await expect(
-    page.getByRole("heading", { name: "You're booked." }),
+    page.getByRole("heading", { name: "Your Stay Is Confirmed" }),
   ).toBeVisible();
 });

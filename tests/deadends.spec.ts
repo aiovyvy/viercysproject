@@ -27,7 +27,7 @@ async function bookInUi(page: Page, search: object, room: string) {
   await page.getByRole("checkbox", { name: /simulated booking/ }).check();
   await page.getByRole("button", { name: /Confirm reservation/ }).click();
   await expect(
-    page.getByRole("heading", { name: "You're booked." }),
+    page.getByRole("heading", { name: "Your Stay Is Confirmed" }),
   ).toBeVisible();
   return (await page.locator(".stay-ref").innerText()).trim();
 }

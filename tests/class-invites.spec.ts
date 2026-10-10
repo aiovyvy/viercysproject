@@ -95,10 +95,22 @@ test("manager creates one shared link; two phone guests independently book witho
     await page.getByRole("checkbox", { name: /simulated booking/ }).check();
     await page.getByRole("button", { name: "Confirm reservation" }).click();
     await expect(
-      page.getByRole("heading", { name: "You're booked." }),
+      page.getByRole("heading", { name: "Your Stay Is Confirmed" }),
     ).toBeVisible();
     const reference = (await page.locator(".stay-ref").innerText()).trim();
     references.push(reference);
+    const confirmation = await phone.request.get(
+      `/api/bookings/${reference}/confirmation.pdf`,
+    );
+    expect(confirmation.status()).toBe(200);
+    expect(confirmation.headers()["content-type"]).toBe("application/pdf");
+    await expect(
+      page.getByRole("link", { name: "Download PDF Confirmation" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Share Confirmation", exact: true }),
+    ).toBeVisible();
+    await expect(page.locator(".confirmation-total")).toContainText("₱0.00");
     await expect(
       page.getByText("No email address was provided.", { exact: false }),
     ).toBeVisible();

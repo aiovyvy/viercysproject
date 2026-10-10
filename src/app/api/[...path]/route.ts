@@ -353,6 +353,26 @@ export async function handler(
     if (path[0] === "bookings" && path[1]) {
       const reference = path[1];
       const booking = await authorize(reference, owner);
+      if (path[2] === "confirmation.pdf" && path.length === 3) {
+        if (request.method !== "GET")
+          return NextResponse.json(
+            { error: "Method not allowed." },
+            { status: 405, headers: { Allow: "GET" } },
+          );
+        const { bookingConfirmationPdf } =
+          await import("@/lib/confirmation-pdf");
+        const bytes = await bookingConfirmationPdf(booking);
+        const safeReference = booking.reference.replace(/[^A-Za-z0-9-]/g, "");
+        return new NextResponse(new Uint8Array(bytes).buffer, {
+          headers: {
+            "Content-Type": "application/pdf",
+            "Content-Disposition": `attachment; filename="VIERCYS-Confirmation-${safeReference}.pdf"`,
+            "Cache-Control": "private, no-store",
+            "X-Content-Type-Options": "nosniff",
+            "Cross-Origin-Resource-Policy": "same-origin",
+          },
+        });
+      }
       if (path[2] === "email-preview") {
         const event = await db()
           .prepare(
