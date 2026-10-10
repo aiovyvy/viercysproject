@@ -28,9 +28,14 @@ test("architectural reveals and room chapters execute with a parked pointer", as
   }
   const rooms = page.locator('[data-scene="rooms"]');
   await page.evaluate(() => scrollTo({ top: 0, behavior: "instant" }));
-  const top = await rooms.evaluate(
-    (el) => el.getBoundingClientRect().top + scrollY,
-  );
+  const top = await rooms.evaluate((el) => {
+    // The pinned element can retain its previous transform until the next
+    // animation frame. Its spacer stays at the stable document position.
+    const anchor = el.parentElement?.classList.contains("pin-spacer")
+      ? el.parentElement
+      : el;
+    return anchor.getBoundingClientRect().top + scrollY;
+  });
   const photoSize = await rooms.locator("[data-room-visual]").boundingBox();
   for (const [index, offset] of [50, 600, 1150].entries()) {
     await page.evaluate(
@@ -47,8 +52,12 @@ test("architectural reveals and room chapters execute with a parked pointer", as
     ).toHaveCSS("opacity", "1");
     const currentSize = await rooms.locator("[data-room-visual]").boundingBox();
     // ScrollTrigger may round the pinned container by a fraction of a pixel.
-    expect(Math.abs(currentSize!.width - photoSize!.width)).toBeLessThanOrEqual(1);
-    expect(Math.abs(currentSize!.height - photoSize!.height)).toBeLessThanOrEqual(1);
+    expect(Math.abs(currentSize!.width - photoSize!.width)).toBeLessThanOrEqual(
+      1,
+    );
+    expect(
+      Math.abs(currentSize!.height - photoSize!.height),
+    ).toBeLessThanOrEqual(1);
     await page.screenshot({ path: testInfo.outputPath(`room-${index}.png`) });
   }
   const experiences = page.locator('[data-scene="experiences"]');

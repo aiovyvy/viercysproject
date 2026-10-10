@@ -1,7 +1,7 @@
 import { Webhook } from "svix";
 import { answerConcierge, requestStructuredSuggestion } from "@/ai/provider";
 import { cookies } from "next/headers";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import {
   db,
   session,
@@ -14,6 +14,8 @@ import {
   type Bucket,
   hash,
   demoEnabled,
+  staffAccessEnabled,
+  transaction,
   listRooms,
 } from "@/lib/db";
 import {
@@ -57,6 +59,14 @@ export const runtime = "nodejs";
 // The origin the browser actually used. Behind `next start` request.url
 // reports localhost even when a phone connects by LAN IP, so use Host.
 function requestOrigin(request: NextRequest) {
+  if (process.env.VERCEL) {
+    const configured = process.env.APP_URL;
+    if (!configured || !configured.startsWith("https://"))
+      throw new Error(
+        "Configure APP_URL with the canonical HTTPS deployment URL.",
+      );
+    return new URL(configured).origin;
+  }
   const proto =
     request.headers.get("x-forwarded-proto")?.split(",")[0].trim() ||
     request.nextUrl.protocol.replace(":", "");
@@ -68,6 +78,7 @@ function requestOrigin(request: NextRequest) {
 // how classroom phones reach a local demo; mark them Secure when on HTTPS.
 function secureCookies(request: NextRequest) {
   return (
+    !!process.env.VERCEL ||
     requestOrigin(request).startsWith("https:") ||
     (process.env.APP_URL || "").startsWith("https:")
   );
@@ -98,23 +109,23 @@ function clientIp(request: NextRequest) {
 const DEVICE_COOKIE = "viercys_device";
 export async function handler(
   request: NextRequest,
-  context: { params: Promise<{ path: string[] }> },
+  context: {
+    params: Promise<{
+      path: string[];
+    }>;
+  },
   device: string,
 ) {
   const ip = clientIp(request);
   const { path } = await context.params;
   const route = path.join("/");
   const cookieStore = await cookies();
-  const guest = session(cookieStore.get("viercys_guest")?.value);
-  const admin = session(cookieStore.get("viercys_staff")?.value);
-  const staff =
-    admin?.kind === "admin" &&
-    (demoEnabled() || (process.env.VIERCYS_ADMIN_PASSWORD?.length || 0) >= 12)
-      ? admin
-      : null;
+  const guest = await session(cookieStore.get("viercys_guest")?.value);
+  const admin = await session(cookieStore.get("viercys_staff")?.value);
+  const staff = admin?.kind === "admin" && staffAccessEnabled() ? admin : null;
   const owner = staff || guest;
   const inviteToken = cookieStore.get(INVITE_COOKIE)?.value;
-  const invite = findInvite(inviteToken);
+  const invite = await findInvite(inviteToken);
   const voucher = invite.state === "valid";
   try {
     if (request.method !== "GET") {
@@ -135,7 +146,12 @@ export async function handler(
           { error: "Webhook not configured." },
           { status: 503 },
         );
-      let event: { type: string; data: { email_id: string } };
+      let event: {
+        type: string;
+        data: {
+          email_id: string;
+        };
+      };
       try {
         const payload = await request.text();
         new Webhook(process.env.RESEND_WEBHOOK_SECRET).verify(payload, {
@@ -156,28 +172,34 @@ export async function handler(
         );
       }
       const id = request.headers.get("svix-id")!;
-      const inserted = db()
-        .prepare(
-          "INSERT OR IGNORE INTO email_webhook_events(id,type) VALUES(?,?)",
-        )
-        .run(id, event.type);
-      const statuses: Record<string, string> = {
-        "email.sent": "sent",
-        "email.delivered": "delivered",
-        "email.bounced": "bounced",
-        "email.failed": "failed",
-        "email.delivery_delayed": "delayed",
-      };
-      if (
-        inserted.changes &&
-        statuses[event.type] &&
-        typeof event.data?.email_id === "string"
-      )
-        db()
+      await transaction(async () => {
+        const inserted = await db()
           .prepare(
-            "UPDATE email_attempts SET status=? WHERE provider_id=? AND (status<>'delivered' OR ?='delivered')",
+            "INSERT OR IGNORE INTO email_webhook_events(id,type) VALUES(?,?)",
           )
-          .run(statuses[event.type], event.data.email_id, statuses[event.type]);
+          .run(id, event.type);
+        const statuses: Record<string, string> = {
+          "email.sent": "sent",
+          "email.delivered": "delivered",
+          "email.bounced": "bounced",
+          "email.failed": "failed",
+          "email.delivery_delayed": "delayed",
+        };
+        if (
+          inserted.changes &&
+          statuses[event.type] &&
+          typeof event.data?.email_id === "string"
+        )
+          await db()
+            .prepare(
+              "UPDATE email_attempts SET status=? WHERE provider_id=? AND (status<>'delivered' OR ?='delivered')",
+            )
+            .run(
+              statuses[event.type],
+              event.data.email_id,
+              statuses[event.type],
+            );
+      });
       return NextResponse.json({ received: true });
     }
     const body = request.method === "GET" ? {} : await request.json();
@@ -189,10 +211,10 @@ export async function handler(
         ["invite-device-" + device, 20],
         ["invite-ip-" + ip, 300],
       ];
-      if (throttled(buckets))
+      if (await throttled(buckets))
         return NextResponse.json({ error: THROTTLE_MESSAGE }, { status: 429 });
-      const claimed = findInvite(String(body.token || ""));
-      if (claimed.state === "invalid") recordFailure(buckets);
+      const claimed = await findInvite(String(body.token || ""));
+      if (claimed.state === "invalid") await recordFailure(buckets);
       if (claimed.state !== "valid")
         return NextResponse.json(
           { error: INVITE_MESSAGES[claimed.state], ...voucherStatus(claimed) },
@@ -216,7 +238,7 @@ export async function handler(
     if (route === "catalog")
       return NextResponse.json({
         categories: CATEGORIES,
-        rooms: listRooms(),
+        rooms: await listRooms(),
         extras: EXTRAS,
         currency: CURRENCY,
         demo: true,
@@ -226,7 +248,7 @@ export async function handler(
         request.method === "GET"
           ? searchFrom(Object.fromEntries(request.nextUrl.searchParams))
           : searchFrom(body);
-      const rooms = available(input);
+      const rooms = await available(input);
       return NextResponse.json({
         search: input,
         rooms,
@@ -252,12 +274,18 @@ export async function handler(
     if (route === "quote") {
       const input = searchFrom(body);
       return NextResponse.json({
-        pricing: quote(input, body.roomIds, body.extras || [], "", voucher),
+        pricing: await quote(
+          input,
+          body.roomIds,
+          body.extras || [],
+          "",
+          voucher,
+        ),
         currency: CURRENCY,
       });
     }
     if (route === "bookings" && request.method === "POST") {
-      const booking = createBooking({
+      const booking = await createBooking({
         ...body,
         ...searchFrom(body),
         inviteToken: body.useVoucher === true ? inviteToken || "" : undefined,
@@ -271,7 +299,7 @@ export async function handler(
       });
       const response = NextResponse.json({
         booking,
-        email: emailStatuses(booking.reference),
+        email: await emailStatuses(booking.reference),
       });
       if (booking.invite_id) response.cookies.delete(INVITE_COOKIE);
       // A verified email session already covers this booking; otherwise add
@@ -281,21 +309,21 @@ export async function handler(
           request,
           response,
           "viercys_guest",
-          createSession("guest", guestSubject(guest, booking.reference)),
+          await createSession("guest", guestSubject(guest, booking.reference)),
         );
       return response;
     }
     if (route === "bookings")
       return NextResponse.json({
-        bookings: listBookings(owner),
+        bookings: await listBookings(owner),
         signedIn: !!owner,
         verified: !!guest?.verified,
       });
     if (path[0] === "bookings" && path[1]) {
       const reference = path[1];
-      const booking = authorize(reference, owner);
+      const booking = await authorize(reference, owner);
       if (path[2] === "email-preview") {
-        const event = db()
+        const event = await db()
           .prepare(
             "SELECT * FROM email_attempts WHERE reference=? ORDER BY rowid DESC LIMIT 1",
           )
@@ -305,7 +333,7 @@ export async function handler(
             (await emailHtml(
               booking,
               "confirmation",
-              manageLink(
+              await manageLink(
                 booking.email,
                 booking.reference,
                 requestOrigin(request),
@@ -324,13 +352,13 @@ export async function handler(
       }
       if (path[2] === "email-retry" && request.method === "POST") {
         if (process.env.RESEND_API_KEY && process.env.RESEND_FROM)
-          db()
+          await db()
             .prepare(
               "UPDATE email_attempts SET status='queued' WHERE reference=? AND status='demo-preview'",
             )
             .run(reference);
         await sendEmails(reference, requestOrigin(request));
-        return NextResponse.json({ email: emailStatuses(reference) });
+        return NextResponse.json({ email: await emailStatuses(reference) });
       }
       if (path[2] === "modification-quote" && request.method === "POST") {
         if (
@@ -344,7 +372,7 @@ export async function handler(
         const roomIds: string[] = body.roomIds || booking.roomIds;
         let pricing;
         try {
-          pricing = quote(
+          pricing = await quote(
             search,
             roomIds,
             booking.extras,
@@ -361,7 +389,7 @@ export async function handler(
             {
               error: ROOM_UNAVAILABLE,
               code: "room_unavailable",
-              options: changeOptions(booking, search),
+              options: await changeOptions(booking, search),
             },
             { status: 409 },
           );
@@ -369,7 +397,7 @@ export async function handler(
         return NextResponse.json({ pricing, currency: booking.currency });
       }
       if (path[2] === "modify" && request.method === "POST") {
-        const updated = modify(
+        const updated = await modify(
           reference,
           { ...searchFrom(body), roomIds: body.roomIds },
           owner,
@@ -378,7 +406,7 @@ export async function handler(
         return NextResponse.json({ booking: updated });
       }
       if (path[2] === "cancel" && request.method === "POST") {
-        const updated = cancel(reference, owner, body.confirm === true);
+        const updated = await cancel(reference, owner, body.confirm === true);
         await sendEmails(reference, requestOrigin(request));
         return NextResponse.json({ booking: updated });
       }
@@ -393,12 +421,12 @@ export async function handler(
           throw new Error(
             "Demo digital check-in is available on your arrival date.",
           );
-        db()
+        await db()
           .prepare(
             "UPDATE bookings SET checkin_status='demo-prechecked' WHERE reference=?",
           )
           .run(reference);
-        return NextResponse.json({ booking: getBooking(reference) });
+        return NextResponse.json({ booking: await getBooking(reference) });
       }
       if (path[2] === "itinerary") {
         if (request.method === "POST") {
@@ -480,7 +508,7 @@ export async function handler(
           const itinerary = suggested
             ? { ...result, source: "ai-assisted", days: suggested.days }
             : result;
-          saveItinerary(reference, itinerary);
+          await saveItinerary(reference, itinerary);
           return NextResponse.json({ itinerary });
         }
         if (request.method === "PUT") {
@@ -499,7 +527,7 @@ export async function handler(
           )
             throw new Error("Provide a valid daily itinerary.");
           const original =
-            loadItinerary(reference) ||
+            (await loadItinerary(reference)) ||
             defaultItinerary(booking, {
               interests: "architecture",
               pace: "slow",
@@ -527,12 +555,15 @@ export async function handler(
               evening: day.evening,
             })),
           };
-          saveItinerary(reference, updated);
+          await saveItinerary(reference, updated);
           return NextResponse.json({ itinerary: updated });
         }
-        return NextResponse.json({ itinerary: loadItinerary(reference) });
+        return NextResponse.json({ itinerary: await loadItinerary(reference) });
       }
-      return NextResponse.json({ booking, email: emailStatuses(reference) });
+      return NextResponse.json({
+        booking,
+        email: await emailStatuses(reference),
+      });
     }
     if (route === "profile") {
       if (!guest?.verified || guest.kind !== "guest")
@@ -548,16 +579,16 @@ export async function handler(
           String(body.phone || "").length > 40
         )
           throw new Error("Provide a valid name and optional phone.");
-        db()
+        await db()
           .prepare(
             "INSERT INTO guests(email,name,phone) VALUES(?,?,?) ON CONFLICT(email) DO UPDATE SET name=excluded.name,phone=excluded.phone",
           )
           .run(guest.subject, body.name.trim(), String(body.phone || ""));
       }
       return NextResponse.json({
-        profile: db()
+        profile: (await db()
           .prepare("SELECT * FROM guests WHERE email=?")
-          .get(guest.subject) || { email: guest.subject, name: "", phone: "" },
+          .get(guest.subject)) || { email: guest.subject, name: "", phone: "" },
       });
     }
     if (route === "lookup" && request.method === "POST") {
@@ -572,10 +603,13 @@ export async function handler(
         ["lookup-email-" + hash(email), 5],
         ["lookup-device-" + device, 20],
       ];
-      if (throttled(buckets))
+      if (await throttled(buckets))
         return NextResponse.json({ error: THROTTLE_MESSAGE }, { status: 429 });
-      recordFailure(buckets);
-      void requestLookup(email, requestOrigin(request));
+      await recordFailure(buckets);
+      const origin = requestOrigin(request);
+      after(async () => {
+        await requestLookup(email, origin).catch(() => {});
+      });
       return NextResponse.json({
         message: emailConfigured()
           ? "If that email has a VIERCYS booking, we have sent it a private access link."
@@ -596,17 +630,21 @@ export async function handler(
         ["ref-ip-" + ip, 200],
         ["ref-booking-" + hash(reference), 20],
       ];
-      if (throttled(buckets))
+      if (await throttled(buckets))
         return NextResponse.json({ error: THROTTLE_MESSAGE }, { status: 429 });
       const match = /^VRC-[0-9A-F]{12}$/.test(reference)
-        ? (db()
+        ? ((await db()
             .prepare(
               "SELECT reference FROM bookings WHERE reference=? AND email=?",
             )
-            .get(reference, email) as { reference: string } | undefined)
+            .get(reference, email)) as unknown as
+            | {
+                reference: string;
+              }
+            | undefined)
         : undefined;
       if (!match) {
-        recordFailure(buckets);
+        await recordFailure(buckets);
         return NextResponse.json(
           {
             error:
@@ -620,13 +658,13 @@ export async function handler(
         request,
         response,
         "viercys_guest",
-        createSession("guest", guestSubject(guest, match.reference)),
+        await createSession("guest", guestSubject(guest, match.reference)),
       );
       return response;
     }
     if (route === "verify" && request.method === "POST") {
       const token = String(body.token || "");
-      const row = db()
+      const row = await db()
         .prepare(
           "SELECT * FROM lookup_tokens WHERE hash=? AND used=0 AND expires>?",
         )
@@ -640,7 +678,7 @@ export async function handler(
       // links are single use.
       const bookingScoped = String(row.email).startsWith("booking:");
       if (!bookingScoped) {
-        const result = db()
+        const result = await db()
           .prepare("UPDATE lookup_tokens SET used=1 WHERE hash=? AND used=0")
           .run(hash(token));
         if (Number(result.changes) !== 1)
@@ -652,11 +690,11 @@ export async function handler(
         response,
         "viercys_guest",
         bookingScoped
-          ? createSession(
+          ? await createSession(
               "guest",
               guestSubject(guest, String(row.email).slice(8)),
             )
-          : createSession("guest", String(row.email), true),
+          : await createSession("guest", String(row.email), true),
       );
       return response;
     }
@@ -664,7 +702,9 @@ export async function handler(
       for (const name of ["viercys_guest", "viercys_staff"]) {
         const token = cookieStore.get(name)?.value;
         if (token)
-          db().prepare("DELETE FROM sessions WHERE hash=?").run(hash(token));
+          await db()
+            .prepare("DELETE FROM sessions WHERE hash=?")
+            .run(hash(token));
       }
       const response = NextResponse.json({ ok: true });
       response.cookies.delete("viercys_guest");
@@ -694,10 +734,7 @@ export async function handler(
       });
     }
     if (route === "admin/login" && request.method === "POST") {
-      if (
-        !demoEnabled() &&
-        (process.env.VIERCYS_ADMIN_PASSWORD?.length || 0) < 12
-      )
+      if (!staffAccessEnabled())
         return NextResponse.json(
           { error: "Production staff access requires configured credentials." },
           { status: 403 },
@@ -710,23 +747,23 @@ export async function handler(
         ["staff-ip-" + ip, 50],
         ["staff-user-" + hash(username), 100],
       ];
-      if (throttled(buckets))
+      if (await throttled(buckets))
         return NextResponse.json({ error: THROTTLE_MESSAGE }, { status: 429 });
-      const role = checkPassword(username, String(body.password || ""));
+      const role = await checkPassword(username, String(body.password || ""));
       if (!role) {
-        recordFailure(buckets);
+        await recordFailure(buckets);
         return NextResponse.json(
           { error: "Invalid staff credentials." },
           { status: 401 },
         );
       }
-      clearFailures("staff-device-" + device);
+      await clearFailures("staff-device-" + device);
       const response = NextResponse.json({ ok: true, role });
       setCookie(
         request,
         response,
         "viercys_staff",
-        createSession("admin", String(body.username), true, role),
+        await createSession("admin", String(body.username), true, role),
       );
       return response;
     }
@@ -737,8 +774,8 @@ export async function handler(
           { status: 401 },
         );
       if (route === "admin/dashboard") {
-        const bookings = listBookings(staff);
-        const rooms = listRooms();
+        const bookings = await listBookings(staff);
+        const rooms = await listRooms();
         const today = propertyToday();
         const active = bookings.filter(
           (booking) => booking.status === "confirmed",
@@ -747,17 +784,19 @@ export async function handler(
           rooms,
           bookings,
           emails: Object.fromEntries(
-            bookings.map((booking) => [
-              booking.reference,
-              emailStatuses(booking.reference),
-            ]),
+            await Promise.all(
+              bookings.map(async (booking) => [
+                booking.reference,
+                await emailStatuses(booking.reference),
+              ]),
+            ),
           ),
           emailConfigured: emailConfigured(),
           role: staff.role,
-          blocks: db()
+          blocks: await db()
             .prepare("SELECT * FROM availability_blocks ORDER BY arrival")
             .all(),
-          payments: db()
+          payments: await db()
             .prepare("SELECT * FROM payment_records ORDER BY created_at DESC")
             .all(),
           today,
@@ -786,22 +825,24 @@ export async function handler(
           throw new Error(
             "Confirm the single reservation reference before sending.",
           );
-        const booking = getBooking(body.reference);
+        const booking = await getBooking(body.reference);
         if (!booking || booking.status !== "confirmed")
           throw new Error("Choose a confirmed reservation.");
         if (!emailConfigured())
           throw new Error(
             "Email sending is not configured. The reservation remains saved.",
           );
-        queueEmail(booking.reference, "confirmation");
+        await queueEmail(booking.reference, "confirmation");
         const eventId = `${booking.reference}-${booking.version}-confirmation`;
-        db()
+        await db()
           .prepare(
             "UPDATE email_attempts SET status='queued' WHERE id=? AND status='demo-preview'",
           )
           .run(eventId);
         await sendEmails(booking.reference, requestOrigin(request), eventId);
-        return NextResponse.json({ email: emailStatuses(booking.reference) });
+        return NextResponse.json({
+          email: await emailStatuses(booking.reference),
+        });
       }
       if (route === "admin/invites") {
         if (request.method === "POST") {
@@ -811,7 +852,7 @@ export async function handler(
               { status: 403 },
             );
           const origin = process.env.APP_URL || requestOrigin(request);
-          const created = createInvites(Number(body.count || 1), {
+          const created = await createInvites(Number(body.count || 1), {
             label: body.label,
             days: body.days === undefined ? undefined : Number(body.days),
           });
@@ -820,11 +861,14 @@ export async function handler(
               ...item,
               url: `${origin}/invite/${item.token}`,
             })),
-            invites: listInvites(),
+            invites: await listInvites(),
             now: Date.now(),
           });
         }
-        return NextResponse.json({ invites: listInvites(), now: Date.now() });
+        return NextResponse.json({
+          invites: await listInvites(),
+          now: Date.now(),
+        });
       }
       if (route === "admin/remove-block" && request.method === "POST") {
         if (staff.role !== "manager")
@@ -832,7 +876,7 @@ export async function handler(
             { error: "Manager access required." },
             { status: 403 },
           );
-        db()
+        await db()
           .prepare("DELETE FROM availability_blocks WHERE id=?")
           .run(String(body.id));
         return NextResponse.json({ ok: true });
@@ -845,9 +889,11 @@ export async function handler(
         )
           throw new Error("Choose a valid operational status.");
         if (
-          !db()
-            .prepare("UPDATE rooms SET operational=? WHERE id=?")
-            .run(body.status, body.id).changes
+          !(
+            await db()
+              .prepare("UPDATE rooms SET operational=? WHERE id=?")
+              .run(body.status, body.id)
+          ).changes
         )
           throw new Error("Unknown room.");
         return NextResponse.json({ ok: true });
@@ -861,14 +907,14 @@ export async function handler(
         const input = searchFrom({ ...body, adults: 1, children: 0, rooms: 1 });
         const error = (await import("@/lib/policy")).validateSearch(input);
         if (error) throw new Error(error);
-        const conflicts = db()
+        const conflicts = await db()
           .prepare(
             "SELECT 1 FROM booked_rooms JOIN bookings USING(reference) WHERE room_id=? AND status='confirmed' AND arrival<? AND departure>? LIMIT 1",
           )
           .get(body.roomId, input.departure, input.arrival);
         if (conflicts)
           throw new Error("This block would overlap a confirmed reservation.");
-        db()
+        await db()
           .prepare("INSERT INTO availability_blocks VALUES(?,?,?,?,?)")
           .run(
             crypto.randomUUID(),
@@ -880,17 +926,17 @@ export async function handler(
         return NextResponse.json({ ok: true });
       }
       if (route === "admin/reservation" && request.method === "POST") {
-        const booking = authorize(String(body.reference), staff);
+        const booking = await authorize(String(body.reference), staff);
         if (!["checked-in", "checked-out", "not-arrived"].includes(body.status))
           throw new Error("Choose a valid arrival status.");
         if (booking.status !== "confirmed")
           throw new Error(
             "Only confirmed reservations can change arrival status.",
           );
-        db()
+        await db()
           .prepare("UPDATE bookings SET checkin_status=? WHERE reference=?")
           .run(body.status, booking.reference);
-        db()
+        await db()
           .prepare(
             "UPDATE rooms SET operational=? WHERE id IN(SELECT room_id FROM booked_rooms WHERE reference=?)",
           )
@@ -910,8 +956,8 @@ export async function handler(
             { error: "Manager access required." },
             { status: 403 },
           );
-        authorize(String(body.reference), staff);
-        queueEmail(String(body.reference), "reminder");
+        await authorize(String(body.reference), staff);
+        await queueEmail(String(body.reference), "reminder");
         await sendEmails(String(body.reference), requestOrigin(request));
         return NextResponse.json({ ok: true });
       }
@@ -946,7 +992,10 @@ export async function handler(
 }
 function voucherStatus(result: {
   state: string;
-  invite?: { expires_at: number; nights: number } | null;
+  invite?: {
+    expires_at: number;
+    nights: number;
+  } | null;
 }) {
   return {
     state: result.state,
@@ -963,7 +1012,11 @@ function voucherStatus(result: {
 }
 async function routeHandler(
   request: NextRequest,
-  context: { params: Promise<{ path: string[] }> },
+  context: {
+    params: Promise<{
+      path: string[];
+    }>;
+  },
 ) {
   const existing = request.cookies.get(DEVICE_COOKIE)?.value;
   const device =
@@ -971,6 +1024,7 @@ async function routeHandler(
       ? existing
       : crypto.randomUUID();
   const response = await handler(request, context, device);
+  response.headers.set("Cache-Control", "no-store");
   response.headers.set("Cache-Control", "no-store");
   if (device !== existing)
     response.cookies.set(DEVICE_COOKIE, device, {

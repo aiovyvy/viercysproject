@@ -15,9 +15,9 @@ export function escapeHtml(value: unknown) {
       ]!,
   );
 }
-export function lookupToken(email: string) {
+export async function lookupToken(email: string) {
   const token = randomBytes(32).toString("base64url");
-  db()
+  await db()
     .prepare("INSERT INTO lookup_tokens VALUES(?,?,?,0)")
     .run(hash(token), email, Date.now() + 7 * 86400000);
   return token;
@@ -29,14 +29,18 @@ export function appBase(origin?: string) {
     "",
   );
 }
-export function manageLink(email: string, reference?: string, origin?: string) {
+export async function manageLink(
+  email: string,
+  reference?: string,
+  origin?: string,
+) {
   return (
     (process.env.APP_URL || origin || "http://localhost:3000").replace(
       /\/$/,
       "",
     ) +
     "/lookup?token=" +
-    lookupToken(reference ? "booking:" + reference : email)
+    (await lookupToken(reference ? "booking:" + reference : email))
   );
 }
 export async function emailHtml(
@@ -90,20 +94,22 @@ export async function emailHtml(
 }
 // A successful reservation is required before reaching this sender. Bound real
 // provider traffic per destination address, including retries and new bookings.
-function reserveEmailSend(recipient: string) {
-  return transaction(() => {
+async function reserveEmailSend(recipient: string) {
+  return await transaction(async () => {
     const now = Date.now();
     const limits: [string, number][] = [
       ["booking-email-" + hash(recipient.toLowerCase()), 10],
       ["booking-email-global", 200],
     ];
-    const rows = limits.map(([key, limit]) => ({
-      key,
-      limit,
-      row: db()
-        .prepare("SELECT count,reset FROM rate_limits WHERE key=?")
-        .get(key),
-    }));
+    const rows = await Promise.all(
+      limits.map(async ([key, limit]) => ({
+        key,
+        limit,
+        row: await db()
+          .prepare("SELECT count,reset FROM rate_limits WHERE key=?")
+          .get(key),
+      })),
+    );
     if (
       rows.some(
         ({ row, limit }) =>
@@ -115,17 +121,16 @@ function reserveEmailSend(recipient: string) {
       );
     for (const { key, row } of rows) {
       if (!row || Number(row.reset) <= now)
-        db()
+        await db()
           .prepare("INSERT OR REPLACE INTO rate_limits VALUES(?,?,?)")
           .run(key, 1, now + 15 * 60000);
       else
-        db()
+        await db()
           .prepare("UPDATE rate_limits SET count=count+1 WHERE key=?")
           .run(key);
     }
   });
 }
-
 export function assertTestRecipient(recipient: string) {
   if (
     (process.env.RESEND_FROM || "").includes("onboarding@resend.dev") &&
@@ -141,12 +146,12 @@ export async function sendEmails(
   origin?: string,
   eventId?: string,
 ) {
-  db()
+  await db()
     .prepare(
       "UPDATE email_attempts SET status='queued' WHERE reference=? AND status='sending' AND claimed_at<?",
     )
     .run(reference, Date.now() - 60000);
-  const events = db()
+  const events = await db()
     .prepare(
       "SELECT * FROM email_attempts WHERE reference=? AND status IN('queued','failed') AND (? IS NULL OR id=?)",
     )
@@ -155,32 +160,34 @@ export async function sendEmails(
     const id = String(event.id);
     // Claim before awaiting template rendering: concurrent checkout requests
     // must never submit the same event twice.
-    const claim = db()
+    const claim = await db()
       .prepare(
         "UPDATE email_attempts SET attempts=attempts+1,status='sending',error=NULL,claimed_at=? WHERE id=? AND status IN('queued','failed')",
       )
       .run(Date.now(), id);
     if (Number(claim.changes) !== 1) continue;
     try {
-      const booking = getBooking(reference)!;
+      const booking = (await getBooking(reference))!;
       const html =
         String(event.html) ||
         (await emailHtml(
           booking,
           event.kind as EmailKind,
-          manageLink(booking.email, booking.reference, origin),
+          await manageLink(booking.email, booking.reference, origin),
           origin,
         ));
-      db().prepare("UPDATE email_attempts SET html=? WHERE id=?").run(html, id);
+      await db()
+        .prepare("UPDATE email_attempts SET html=? WHERE id=?")
+        .run(html, id);
       if (!emailConfigured()) {
-        db()
+        await db()
           .prepare("UPDATE email_attempts SET status='demo-preview' WHERE id=?")
           .run(id);
         continue;
       }
       const recipient = process.env.RESEND_TEST_RECIPIENT || booking.email;
       assertTestRecipient(recipient);
-      reserveEmailSend(recipient);
+      await reserveEmailSend(recipient);
       const response = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
@@ -203,14 +210,14 @@ export async function sendEmails(
         );
       if (typeof result.id !== "string" || !result.id)
         throw new Error("Email provider did not return a message reference.");
-      db()
+      await db()
         .prepare(
           "UPDATE email_attempts SET status='accepted',provider_id=? WHERE id=?",
         )
         .run(result.id, id);
     } catch (error) {
       // Template/provider failures cannot undo the already committed booking.
-      db()
+      await db()
         .prepare("UPDATE email_attempts SET status='failed',error=? WHERE id=?")
         .run(
           error instanceof Error ? error.message : "Email sending failed",
@@ -225,7 +232,8 @@ export const emailConfigured = () =>
 // that server-side file. Nothing here is ever returned over HTTP.
 function devOutbox(entry: Record<string, string>) {
   const path = process.env.VIERCYS_DEV_OUTBOX;
-  if (path) appendFileSync(path, JSON.stringify(entry) + "\n");
+  if (path && !process.env.VERCEL && !process.env.TURSO_DATABASE_URL)
+    appendFileSync(path, JSON.stringify(entry) + "\n");
 }
 /**
  * Emails a private access link if the address has a booking. Callers must
@@ -233,13 +241,13 @@ function devOutbox(entry: Record<string, string>) {
  * response nor its timing reveals whether the email is known.
  */
 export async function requestLookup(email: string, origin?: string) {
-  const bookingRow = db()
+  const bookingRow = await db()
     .prepare(
       "SELECT reference FROM bookings WHERE email=? ORDER BY created_at DESC LIMIT 1",
     )
     .get(email);
   if (!bookingRow) return;
-  const link = manageLink(email, undefined, origin);
+  const link = await manageLink(email, undefined, origin);
   if (!emailConfigured()) {
     devOutbox({ kind: "lookup", to: email, link });
     return;

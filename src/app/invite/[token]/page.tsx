@@ -14,11 +14,13 @@ export const metadata = {
 export default async function InvitePage({
   params,
 }: {
-  params: Promise<{ token: string }>;
+  params: Promise<{
+    token: string;
+  }>;
 }) {
   await connection();
   const { token } = await params;
-  const { state, invite } = findInvite(token);
+  const { state, invite } = await findInvite(token);
   const expires =
     invite && new Date(invite.expires_at).toISOString().slice(0, 10);
   return (

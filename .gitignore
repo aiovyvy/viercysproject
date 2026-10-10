@@ -49,3 +49,10 @@ test-results/
 data/
 .env.local
 
+
+# Local diagnostics can contain guest data.
+/debug.log
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.db

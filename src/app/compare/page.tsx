@@ -17,7 +17,7 @@ export default async function Compare({
     .slice(0, 3);
   const categories = CATEGORIES.filter((cat) => ids.includes(cat.id));
   const error = validateSearch(search);
-  const rooms = error ? [] : available(search);
+  const rooms = error ? [] : await available(search);
   return (
     <Shell
       title="Compare rooms."

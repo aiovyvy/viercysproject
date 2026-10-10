@@ -4,12 +4,23 @@ import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { propertyToday, addDays } from "../src/lib/policy";
 // Reads the test-only server outbox (VIERCYS_DEV_OUTBOX); never served over HTTP.
-function outboxLink(email: string) {
-  const lines = readFileSync("test-results/dev-outbox.jsonl", "utf8")
-    .trim()
-    .split("\n")
-    .map((line) => JSON.parse(line) as { to: string; link: string });
-  return lines.filter((line) => line.to === email).pop()!.link;
+async function outboxLink(email: string) {
+  let link: string | undefined;
+  await expect
+    .poll(() => {
+      try {
+        const lines = readFileSync("test-results/dev-outbox.jsonl", "utf8")
+          .trim()
+          .split("\n")
+          .map((line) => JSON.parse(line) as { to: string; link: string });
+        link = lines.filter((line) => line.to === email).pop()?.link;
+        return !!link;
+      } catch {
+        return false;
+      }
+    })
+    .toBe(true);
+  return link!;
 }
 const skipGuide = () =>
   window.localStorage.setItem("viercys-booking-guide-v1", "done");
@@ -84,9 +95,7 @@ test("romantic booking, post-booking itinerary, email preview and staff visibili
   });
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(
-    page
-      .frameLocator("iframe")
-      .getByText("Reservation total", { exact: true }),
+    page.frameLocator("iframe").getByText("Reservation total", { exact: true }),
   ).toBeVisible();
   await page.screenshot({
     path: "test-results/email-mobile.png",
@@ -176,7 +185,7 @@ test("concurrent requests, duplicate retries and secure guest lookup", async ({
   await expect(page.locator("a[href*='token=']")).toHaveCount(0);
   // The link reaches only the (test) mailbox, then works once.
   const token = new URL(
-    outboxLink("concurrency@example.test"),
+    await outboxLink("concurrency@example.test"),
   ).searchParams.get("token")!;
   await page.goto("/lookup?token=" + token);
   await page.getByRole("button", { name: "Open my booking" }).click();
@@ -330,7 +339,9 @@ test("verified profile and staff blocks, calendar, housekeeping and arrival oper
   expect(reservation.ok()).toBeTruthy();
   const { booking } = await reservation.json();
   await page.request.post("/api/lookup", { data: { email: booking.email } });
-  const token = new URL(outboxLink(booking.email)).searchParams.get("token");
+  const token = new URL(await outboxLink(booking.email)).searchParams.get(
+    "token",
+  );
   expect(
     (await page.request.post("/api/verify", { data: { token } })).ok(),
   ).toBeTruthy();

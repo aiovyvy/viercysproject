@@ -69,7 +69,11 @@ export type Booking = SearchInput & {
   requests: string;
   room_count: number;
   roomIds: string[];
-  allocations: { room_id: string; adults: number; children: number }[];
+  allocations: {
+    room_id: string;
+    adults: number;
+    children: number;
+  }[];
   extras: ExtraSelection[];
   pricing: Pricing;
   currency: string;
@@ -83,7 +87,11 @@ export type Booking = SearchInput & {
 export type BookingInput = SearchInput & {
   roomIds: string[];
   extras?: ExtraSelection[];
-  guest: { name: string; email: string; phone?: string };
+  guest: {
+    name: string;
+    email: string;
+    phone?: string;
+  };
   requests?: string;
   consent: boolean;
   idempotencyKey: string;
@@ -94,9 +102,9 @@ function assertSearch(input: SearchInput) {
   const error = validateSearch(input);
   if (error) throw new Error(error);
 }
-export function available(input: SearchInput, exclude = "") {
+export async function available(input: SearchInput, exclude = "") {
   assertSearch(input);
-  return db()
+  return (await db()
     .prepare(
       "SELECT * FROM rooms room WHERE room.operational<>'maintenance' AND NOT EXISTS(SELECT 1 FROM booked_rooms slot JOIN bookings stay ON stay.reference=slot.reference WHERE slot.room_id=room.id AND stay.status='confirmed' AND stay.reference<>? AND stay.arrival<? AND stay.departure>?) AND NOT EXISTS(SELECT 1 FROM availability_blocks block WHERE block.room_id=room.id AND block.arrival<? AND block.departure>?) ORDER BY room.rate,room.number",
     )
@@ -106,7 +114,7 @@ export function available(input: SearchInput, exclude = "") {
       input.arrival,
       input.departure,
       input.arrival,
-    ) as unknown as Room[];
+    )) as unknown as Room[];
 }
 export function allocation(input: SearchInput, rooms: Room[]) {
   if (
@@ -224,7 +232,7 @@ export function pricing(
     pendingApprovalTotal,
   };
 }
-export function quote(
+export async function quote(
   input: SearchInput,
   ids: string[],
   extras: ExtraSelection[] = [],
@@ -233,7 +241,7 @@ export function quote(
 ) {
   if (!Array.isArray(ids) || ids.some((id) => typeof id !== "string"))
     throw new Error("Select valid physical rooms.");
-  const rooms = available(input, exclude).filter((room) =>
+  const rooms = (await available(input, exclude)).filter((room) =>
     ids.includes(room.id),
   );
   if (rooms.length !== ids.length)
@@ -249,9 +257,9 @@ export const ROOM_UNAVAILABLE =
  * would work instead: the longest extension in the same room(s), and/or
  * free rooms of the same type for the whole requested stay.
  */
-export function changeOptions(booking: Booking, search: SearchInput) {
-  const byId = new Map(listRooms().map((room) => [room.id, room]));
-  const free = available(search, booking.reference);
+export async function changeOptions(booking: Booking, search: SearchInput) {
+  const byId = new Map((await listRooms()).map((room) => [room.id, room]));
+  const free = await available(search, booking.reference);
   const moveTo: string[] = [];
   for (const id of booking.roomIds) {
     const keep = free.find((room) => room.id === id && !moveTo.includes(id));
@@ -278,9 +286,11 @@ export function changeOptions(booking: Booking, search: SearchInput) {
       extra >= 1;
       extra--
     ) {
-      const ids = available(
-        { ...search, departure: addDays(booking.departure, extra) },
-        booking.reference,
+      const ids = (
+        await available(
+          { ...search, departure: addDays(booking.departure, extra) },
+          booking.reference,
+        )
       ).map((room) => room.id);
       if (booking.roomIds.every((id) => ids.includes(id))) {
         maxExtraNights = extra;
@@ -296,16 +306,16 @@ export function changeOptions(booking: Booking, search: SearchInput) {
         : null,
   };
 }
-export function getBooking(reference: string): Booking | null {
-  const row = db()
+export async function getBooking(reference: string): Promise<Booking | null> {
+  const row = (await db()
     .prepare("SELECT * FROM bookings WHERE reference=?")
-    .get(reference) as Record<string, unknown> | undefined;
+    .get(reference)) as Record<string, unknown> | undefined;
   if (!row) return null;
-  const allocations = db()
+  const allocations = (await db()
     .prepare(
       "SELECT room_id,adults,children FROM booked_rooms WHERE reference=?",
     )
-    .all(reference) as Booking["allocations"];
+    .all(reference)) as unknown as Booking["allocations"];
   return {
     ...row,
     rooms: Number(row.room_count),
@@ -315,8 +325,8 @@ export function getBooking(reference: string): Booking | null {
     roomIds: allocations.map((slot) => slot.room_id),
   } as Booking;
 }
-export function authorize(reference: string, auth: Session | null) {
-  const booking = getBooking(reference);
+export async function authorize(reference: string, auth: Session | null) {
+  const booking = await getBooking(reference);
   if (
     !booking ||
     !auth ||
@@ -328,7 +338,7 @@ export function authorize(reference: string, auth: Session | null) {
     throw new Error("Sign in with a verified link to access this reservation.");
   return booking;
 }
-export function createBooking(input: BookingInput) {
+export async function createBooking(input: BookingInput) {
   assertSearch(input);
   if (
     !Array.isArray(input.roomIds) ||
@@ -368,21 +378,25 @@ export function createBooking(input: BookingInput) {
     },
   };
   const payloadHash = hash(JSON.stringify(canonical));
-  return transaction(() => {
-    const duplicate = db()
+  return await transaction(async () => {
+    const duplicate = (await db()
       .prepare(
         "SELECT reference,payload_hash FROM bookings WHERE idempotency_key=?",
       )
-      .get(input.idempotencyKey) as
-      { reference: string; payload_hash: string } | undefined;
+      .get(input.idempotencyKey)) as unknown as
+      | {
+          reference: string;
+          payload_hash: string;
+        }
+      | undefined;
     if (duplicate) {
       if (duplicate.payload_hash !== payloadHash)
         throw new Error(
           "This checkout request has already been used with different details. Start a new checkout.",
         );
-      return getBooking(duplicate.reference)!;
+      return (await getBooking(duplicate.reference))!;
     }
-    const rooms = available(input).filter((room) =>
+    const rooms = (await available(input)).filter((room) =>
       input.roomIds.includes(room.id),
     );
     if (rooms.length !== input.roomIds.length)
@@ -391,12 +405,12 @@ export function createBooking(input: BookingInput) {
       );
     const allocations = allocation(input, rooms);
     if (useVoucher) {
-      const { state } = findInvite(input.inviteToken);
+      const { state } = await findInvite(input.inviteToken);
       if (state !== "valid") throw new Error(INVITE_MESSAGES[state]);
     }
     const total = pricing(input, rooms, input.extras || [], useVoucher);
     const reference = "VRC-" + randomBytes(6).toString("hex").toUpperCase();
-    db()
+    await db()
       .prepare(
         "INSERT INTO bookings(reference,idempotency_key,payload_hash,arrival,departure,adults,children,room_count,name,email,phone,requests,extras,pricing,currency) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
       )
@@ -418,31 +432,33 @@ export function createBooking(input: BookingInput) {
         CURRENCY,
       );
     for (const slot of allocations)
-      db()
+      await db()
         .prepare("INSERT INTO booked_rooms VALUES(?,?,?,?)")
         .run(reference, slot.room_id, slot.adults, slot.children);
     if (useVoucher)
-      db()
+      await db()
         .prepare("UPDATE bookings SET invite_id=? WHERE reference=?")
-        .run(redeemInvite(input.inviteToken!, reference), reference);
-    db()
+        .run(await redeemInvite(input.inviteToken!, reference), reference);
+    await db()
       .prepare("INSERT OR IGNORE INTO guests(email,name,phone) VALUES(?,?,?)")
       .run(email, canonical.guest.name, canonical.guest.phone);
-    db()
+    await db()
       .prepare(
         "INSERT INTO payment_records(id,reference,status,amount,currency) VALUES(?,?,?,?,?)",
       )
       .run(reference + "-paid", reference, "demo-paid", total.total, CURRENCY);
-    queueEmail(reference, "confirmation");
-    return getBooking(reference)!;
+    await queueEmail(reference, "confirmation");
+    return (await getBooking(reference))!;
   });
 }
-export function modify(
+export async function modify(
   reference: string,
-  input: SearchInput & { roomIds?: string[] },
+  input: SearchInput & {
+    roomIds?: string[];
+  },
   auth: Session | null,
 ) {
-  const original = authorize(reference, auth);
+  const original = await authorize(reference, auth);
   if (
     original.status !== "confirmed" ||
     original.checkin_status !== "not-arrived"
@@ -453,15 +469,15 @@ export function modify(
   assertSearch(input);
   if (auth?.kind !== "admin" && original.arrival <= propertyToday())
     throw new Error("Online changes close on the arrival date. " + FRONT_DESK);
-  return transaction(() => {
-    const current = getBooking(reference)!;
+  return await transaction(async () => {
+    const current = (await getBooking(reference))!;
     if (
       current.status !== "confirmed" ||
       current.checkin_status !== "not-arrived"
     )
       throw new Error("This reservation can no longer be modified.");
     const ids = input.roomIds || current.roomIds;
-    const rooms = available(input, reference).filter((room) =>
+    const rooms = (await available(input, reference)).filter((room) =>
       ids.includes(room.id),
     );
     if (rooms.length !== ids.length)
@@ -473,8 +489,10 @@ export function modify(
       current.extras,
       Boolean(current.invite_id),
     );
-    db().prepare("DELETE FROM booked_rooms WHERE reference=?").run(reference);
-    db()
+    await db()
+      .prepare("DELETE FROM booked_rooms WHERE reference=?")
+      .run(reference);
+    await db()
       .prepare(
         "UPDATE bookings SET arrival=?,departure=?,adults=?,children=?,room_count=?,pricing=?,version=version+1 WHERE reference=?",
       )
@@ -487,13 +505,16 @@ export function modify(
         JSON.stringify(total),
         reference,
       );
-    slots.forEach((slot) =>
-      db()
-        .prepare("INSERT INTO booked_rooms VALUES(?,?,?,?)")
-        .run(reference, slot.room_id, slot.adults, slot.children),
+    await Promise.all(
+      slots.map(
+        async (slot) =>
+          await db()
+            .prepare("INSERT INTO booked_rooms VALUES(?,?,?,?)")
+            .run(reference, slot.room_id, slot.adults, slot.children),
+      ),
     );
     if (total.total !== current.pricing.total)
-      db()
+      await db()
         .prepare(
           "INSERT INTO payment_records(id,reference,status,amount,currency) VALUES(?,?,?,?,?)",
         )
@@ -504,17 +525,19 @@ export function modify(
           total.total - current.pricing.total,
           current.currency,
         );
-    db().prepare("DELETE FROM itineraries WHERE reference=?").run(reference);
-    queueEmail(reference, "modification");
-    return getBooking(reference)!;
+    await db()
+      .prepare("DELETE FROM itineraries WHERE reference=?")
+      .run(reference);
+    await queueEmail(reference, "modification");
+    return (await getBooking(reference))!;
   });
 }
-export function cancel(
+export async function cancel(
   reference: string,
   auth: Session | null,
   confirmed: boolean,
 ) {
-  const booking = authorize(reference, auth);
+  const booking = await authorize(reference, auth);
   if (!confirmed) throw new Error("Confirm cancellation explicitly.");
   if (booking.status === "cancelled") return booking;
   if (
@@ -527,21 +550,21 @@ export function cancel(
       `Online cancellation was available until ${formatDate(cancelOnlineUntil(booking.arrival))}, two days before arrival. ` +
         FRONT_DESK,
     );
-  return transaction(() => {
-    const current = getBooking(reference)!;
+  return await transaction(async () => {
+    const current = (await getBooking(reference))!;
     if (current.status === "cancelled") return current;
     if (
       current.checkin_status === "checked-in" ||
       current.checkin_status === "checked-out"
     )
       throw new Error("This stay has already started. " + FRONT_DESK);
-    db()
+    await db()
       .prepare(
         "UPDATE bookings SET status='cancelled',payment_status='demo-refunded',version=version+1 WHERE reference=?",
       )
       .run(reference);
-    releaseInvite(reference);
-    db()
+    await releaseInvite(reference);
+    await db()
       .prepare(
         "INSERT OR IGNORE INTO payment_records(id,reference,status,amount,currency) VALUES(?,?,?,?,?)",
       )
@@ -552,8 +575,8 @@ export function cancel(
         -current.pricing.total,
         booking.currency,
       );
-    queueEmail(reference, "cancellation");
-    return getBooking(reference)!;
+    await queueEmail(reference, "cancellation");
+    return (await getBooking(reference))!;
   });
 }
 /**
@@ -571,30 +594,37 @@ export function guestSubject(existing: Session | null, reference: string) {
     .slice(-MAX_GUEST_REFERENCES)
     .join(",");
 }
-export function listBookings(auth: Session | null) {
+export async function listBookings(auth: Session | null) {
   if (!auth) return [];
   if (auth.kind !== "admin" && !auth.verified)
-    return guestReferences(auth)
-      .map((reference) => getBooking(reference))
+    return (
+      await Promise.all(
+        guestReferences(auth).map(
+          async (reference) => await getBooking(reference),
+        ),
+      )
+    )
       .filter((booking): booking is Booking => !!booking)
       .reverse();
   const rows =
     auth.kind === "admin"
-      ? db()
+      ? await db()
           .prepare("SELECT reference FROM bookings ORDER BY created_at DESC")
           .all()
-      : db()
+      : await db()
           .prepare(
             "SELECT reference FROM bookings WHERE email=? ORDER BY created_at DESC",
           )
           .all(auth.subject);
-  return rows.map((row) => getBooking(String(row.reference))!);
+  return await Promise.all(
+    rows.map(async (row) => (await getBooking(String(row.reference)))!),
+  );
 }
 export type EmailKind =
   "confirmation" | "modification" | "cancellation" | "reminder";
-export function queueEmail(reference: string, kind: EmailKind) {
-  const booking = getBooking(reference)!;
-  db()
+export async function queueEmail(reference: string, kind: EmailKind) {
+  const booking = (await getBooking(reference))!;
+  await db()
     .prepare(
       "INSERT OR IGNORE INTO email_attempts(id,reference,version,kind,html) VALUES(?,?,?,?,?)",
     )
@@ -606,8 +636,8 @@ export function queueEmail(reference: string, kind: EmailKind) {
       "",
     );
 }
-export function emailStatuses(reference: string) {
-  return db()
+export async function emailStatuses(reference: string) {
+  return await db()
     .prepare(
       "SELECT id,kind,status,error,attempts,provider_id FROM email_attempts WHERE reference=? ORDER BY rowid DESC",
     )
@@ -649,17 +679,17 @@ export function defaultItinerary(booking: Booking, input: ItineraryInput) {
       "Suggestions are not reservations. Verify access, opening times and costs locally.",
   };
 }
-export function saveItinerary(reference: string, content: unknown) {
+export async function saveItinerary(reference: string, content: unknown) {
   const encoded = JSON.stringify(content);
   if (encoded.length > 50000) throw new Error("Itinerary is too large.");
-  db()
+  await db()
     .prepare(
       "INSERT INTO itineraries(reference,content) VALUES(?,?) ON CONFLICT(reference) DO UPDATE SET content=excluded.content,updated_at=CURRENT_TIMESTAMP",
     )
     .run(reference, encoded);
 }
-export function loadItinerary(reference: string) {
-  const row = db()
+export async function loadItinerary(reference: string) {
+  const row = await db()
     .prepare("SELECT content FROM itineraries WHERE reference=?")
     .get(reference);
   return row ? JSON.parse(String(row.content)) : null;

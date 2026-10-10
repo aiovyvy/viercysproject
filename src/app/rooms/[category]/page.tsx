@@ -23,11 +23,12 @@ import { RoomCompare } from "@/components/editorial/RoomCompare";
 import { RoomDock } from "@/components/room/RoomDock";
 import { AmenityIcon } from "@/components/room/AmenityIcon";
 import styles from "@/components/room/room.module.css";
-
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ category: string }>;
+  params: Promise<{
+    category: string;
+  }>;
 }) {
   const room = category((await params).category);
   return {
@@ -37,12 +38,13 @@ export async function generateMetadata({
     description: room?.description,
   };
 }
-
 export default async function RoomPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ category: string }>;
+  params: Promise<{
+    category: string;
+  }>;
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   await connection();
@@ -55,7 +57,7 @@ export default async function RoomPage({
   const error = validateSearch(search);
   const free = error
     ? []
-    : available(search).filter((item) => item.category === room.id);
+    : (await available(search)).filter((item) => item.category === room.id);
   const party = search.adults + search.children;
   const fits = room.capacity * search.rooms >= party;
   const stay = error ? 0 : nights(search);
@@ -80,7 +82,6 @@ export default async function RoomPage({
     ),
   })).filter((group) => group.items.length > 0);
   const others = CATEGORIES.filter((item) => item.id !== room.id);
-
   return (
     <>
       <Navigation />
@@ -191,8 +192,7 @@ export default async function RoomPage({
               </ul>
               <p className={styles.spaceNote}>
                 {room.size} m² · {room.view} view · up to {room.capacity}{" "}
-                guests, including children · {room.inventory} rooms of this
-                kind
+                guests, including children · {room.inventory} rooms of this kind
               </p>
             </section>
           </div>
@@ -302,9 +302,9 @@ export default async function RoomPage({
                   : `Invited guest? Your three complimentary nights cover the Essential rate. Here you pay only the ${money(upgrade)} nightly difference for those nights.`}
               </p>
               <p className={styles.fine}>
-                Free online cancellation until two days before arrival.
-                VIERCYS is a fictional hotel for a classroom project: stays
-                and payments are simulated and nothing is charged.
+                Free online cancellation until two days before arrival. VIERCYS
+                is a fictional hotel for a classroom project: stays and payments
+                are simulated and nothing is charged.
               </p>
             </div>
           </aside>
@@ -335,10 +335,7 @@ export default async function RoomPage({
           <ScrollStory chapters={editorial.chapters} />
         </section>
 
-        <section
-          className={styles.compare}
-          aria-labelledby="compare-title"
-        >
+        <section className={styles.compare} aria-labelledby="compare-title">
           <header className={styles.sectionHead}>
             <p className={styles.kicker}>Rooms &amp; Suites</p>
             <h2 id="compare-title">Find the right room</h2>

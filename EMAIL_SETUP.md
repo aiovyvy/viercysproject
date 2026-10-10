@@ -2,7 +2,7 @@
 
 The existing Next.js booking endpoint saves a validated reservation and its unique confirmation event before processing email. Resend is called only on the server. No additional email endpoint, paid service, card collection or public deployment is required by these code changes.
 
-**Provider acceptance verified locally on October 10, 2026.** A real browser booking, `VRC-18016E977E32`, was saved and its HTML confirmation accepted by Resend (message ID `01a123b0-d830-7587-a674-70239cfbd5bb`). Initial sandbox network failures left the reservation intact; the same event was retried after restarting with network access. Retrying after acceptance did not increase attempts or submit another message. **Inbox receipt remains awaiting the account owner's confirmation.** No public deployment or domain purchase was performed.
+**Provider acceptance verified locally on October 10, 2026.** A real browser booking, `VRC-18016E977E32`, was saved and its HTML confirmation accepted by Resend (message ID `01a123b0-d830-7587-a674-70239cfbd5bb`). Initial sandbox network failures left the reservation intact; the same event was retried after restarting with network access. Retrying after acceptance did not increase attempts or submit another message. **The account owner subsequently confirmed receiving the email.** No public deployment or domain purchase was performed.
 
 ## Current localhost test setup
 
@@ -55,13 +55,11 @@ Until a webhook arrives, the app reports provider acceptance rather than claimin
 
 Only a successfully validated, saved booking can generate this transactional confirmation. Guest retries require access to that specific booking, keep its saved recipient and content, and cannot accept arbitrary message content or target addresses. Same-origin mutation checks are preserved. Provider traffic, including failures/retries, is capped at ten attempts per destination address and 200 across the application in a 15-minute window. Limits leave the booking saved and mark the email unsuccessful; wait before retrying. These limits do not replace provider quotas or email ownership verification; the classroom app is not being certified for unrestricted public use.
 
-Tests cover preview fallback, escaped guest content, the branded template and simulation disclosure, recipient selection, concurrent duplicate submissions, provider rejection/retry with stable HTML and key, bounded retries, persisted bookings after failure, authenticated retry access, and signed webhook verification. Real inbox delivery remains the configuration and manual verification step above.
+Tests cover preview fallback, escaped guest content, the branded template and simulation disclosure, recipient selection, concurrent duplicate submissions, provider rejection/retry with stable HTML and key, bounded retries, persisted bookings after failure, authenticated retry access, and signed webhook verification. The account owner confirmed the original test email arrived. New recipients still require the domain configuration and verification steps above.
 
 
-## Verification for this integration
+## Latest database migration verification
 
-- Production build, TypeScript and lint passed.
-- 22 unit tests passed, including sandbox recipient restrictions, single-event sending, duplicate suppression, provider failure persistence and template escaping.
-- The full 64-test browser suite passed 63 cases; the new staff test encountered a stale JavaScript chunk because a production rebuild ran while its test server was live. After restarting against the finished build, that test passed (1.6 seconds). All 64 cases are verified across those runs; the earlier 12-case booking/security run also passed.
-- A real localhost browser reservation was created, email retried through its authenticated confirmation page, and Resend acceptance recorded. Retrying the accepted event left its provider reference and attempt count unchanged. The confirmation page and persisted HTML preview were inspected visually.
-- The API key remains in ignored local configuration. A live-looking key found in the working `.env.example` was replaced with an empty placeholder before staging; no key was printed or committed.
+The account owner confirmed receiving the original branded email. The subsequent Turso tests disabled email delivery deliberately; they verified saved confirmations and secure deferred sending without contacting additional recipients.
+
+Production build, lint and TypeScript checks passed, along with 25 unit tests, all 64 browser tests in one complete run, and three live Turso checks (including independent-process booking contention). See DEPLOYMENT.md for environment configuration and persistent database setup.

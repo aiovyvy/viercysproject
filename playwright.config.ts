@@ -2,6 +2,7 @@ import { defineConfig } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 export default defineConfig({
   testDir: "./tests",
+  outputDir: "./test-results/e2e",
   testMatch: "**/*.spec.ts",
   fullyParallel: false,
   workers: 1,
@@ -18,6 +19,8 @@ export default defineConfig({
     reuseExistingServer: false,
     timeout: 120000,
     env: {
+      TURSO_DATABASE_URL: "",
+      TURSO_AUTH_TOKEN: "",
       RESEND_API_KEY: "",
       RESEND_FROM: "",
       OPENAI_API_KEY: "",
