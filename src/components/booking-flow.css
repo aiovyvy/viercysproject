@@ -9,7 +9,7 @@
   color: var(--ink);
 }
 .book-main h1 {
-  font-size: clamp(36px, 8vw, 60px);
+  font-size: clamp(42px, 9vw, 68px);
   line-height: 1.08;
   margin: 18px 0 20px;
   color: var(--blue);
@@ -161,8 +161,9 @@
 }
 .book-card legend,
 .book-card > h2 {
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 24px;
+  font-family: var(--serif);
+  font-size: 27px;
+  font-weight: 500;
   color: var(--blue);
   padding: 0;
   margin-bottom: 12px;

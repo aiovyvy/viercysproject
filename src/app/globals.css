@@ -25,8 +25,8 @@ body {
   margin: 0;
   background: var(--ivory);
   color: var(--ink);
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: 15px;
+  font-family: var(--sans);
+  font-size: 16px;
 }
 a {
   color: inherit;
@@ -66,9 +66,9 @@ p {
 h1,
 h2,
 h3 {
-  font-family: Georgia, "Times New Roman", serif;
-  font-weight: 400;
-  letter-spacing: -0.045em;
+  font-family: var(--serif);
+  font-weight: 500;
+  letter-spacing: -0.01em;
 }
 em {
   font-weight: 400;
@@ -106,14 +106,14 @@ img {
   border-bottom: 1px solid #233f4b20;
 }
 .wordmark {
-  font-family: Georgia, serif;
+  font-family: var(--serif);
   font-size: 29px;
   letter-spacing: 0.12em;
   line-height: 1.05;
 }
 .wordmark span {
   display: block;
-  font-family: Arial, sans-serif;
+  font-family: var(--sans);
   font-size: 7px;
   letter-spacing: 0.28em;
   margin-top: 8px;
@@ -228,7 +228,7 @@ img {
   margin-bottom: 26px;
 }
 .reservation-heading > p:last-child {
-  font-family: Georgia, serif;
+  font-family: var(--serif);
   font-size: 19px;
 }
 .reservation-form {
@@ -360,7 +360,7 @@ img {
   letter-spacing: 0.2em;
 }
 .passage-caption p {
-  font-family: Georgia, serif;
+  font-family: var(--serif);
   font-size: 45px;
   line-height: 1.2;
   margin-top: 24px;
@@ -510,7 +510,7 @@ footer {
   align-items: center;
 }
 footer > p {
-  font-family: Georgia, serif;
+  font-family: var(--serif);
   font-style: italic;
   font-size: 19px;
 }
@@ -596,7 +596,7 @@ footer small {
 }
 .summary dd {
   margin: 0;
-  font-family: Georgia, serif;
+  font-family: var(--serif);
   font-size: 24px;
 }
 @media (max-width: 899px) {
@@ -1402,7 +1402,7 @@ footer {
   gap: 28px 48px;
 }
 .footer-brand p {
-  font-family: Georgia, serif;
+  font-family: var(--serif);
   font-style: italic;
   font-size: 19px;
   margin-top: 12px;

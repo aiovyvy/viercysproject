@@ -1,28 +1,25 @@
 import Link from "next/link";
-import { Navigation, Footer } from "./experience";
+import { InfoPage } from "@/components/info-page";
+import { BookLink } from "./experience";
+import ui from "@/components/editorial/ui.module.css";
+import sections from "@/components/editorial/sections.module.css";
+
 export default function NotFound() {
   return (
-    <>
-      <Navigation />
-      <main id="main" className="inner-main">
-        <p className="eyebrow">VIERCYS / Page unavailable</p>
-        <h1>
-          A different
-          <br />
-          <em>direction.</em>
-        </h1>
-        <p className="lead">
-          This page could not be found. Choose a destination or return to your
-          stay.
-        </p>
-        <Link className="closing-cta" href="/book">
-          Book your stay ↗
+    <InfoPage
+      title="A different direction."
+      kicker="Page not found"
+      intro="This page could not be found. Choose where to go next, or return to your stay."
+    >
+      <div className={sections.links}>
+        <BookLink className={ui.primary} />
+        <Link className={ui.ghost} href="/my-stay">
+          My VIERCYS
         </Link>
-        <Link className="text-link" href="/my-stay">
-          My VIERCYS ↗
+        <Link className={ui.textLink} href="/">
+          Back to home <span aria-hidden="true">→</span>
         </Link>
-      </main>
-      <Footer />
-    </>
+      </div>
+    </InfoPage>
   );
 }

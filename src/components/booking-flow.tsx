@@ -1075,9 +1075,12 @@ export function DetailsStep({
           >
             <p>{error}</p>
             {/room|reserved|available/i.test(error) && (
-              <Link href={"/book/rooms?" + searchQuery(search)}>
-                Choose another room
-              </Link>
+              <>
+                <p>Nothing has been booked or charged.</p>
+                <Link href={"/book/rooms?" + searchQuery(search)}>
+                  Choose another room
+                </Link>
+              </>
             )}
           </div>
         )}

@@ -1,34 +1,27 @@
 "use client";
 import Link from "next/link";
-import { Navigation, Footer } from "./experience";
+import { InfoPage } from "@/components/info-page";
+import ui from "@/components/editorial/ui.module.css";
+import sections from "@/components/editorial/sections.module.css";
+
 export default function ErrorPage({ reset }: { reset: () => void }) {
   return (
-    <>
-      <Navigation />
-      <main id="main" className="inner-main">
-        <p className="eyebrow">VIERCYS / We could not finish that request</p>
-        <h1>
-          A moment
-          <br />
-          <em>to reconnect.</em>
-        </h1>
-        <div className="notice" role="alert">
-          <p>
-            Please try again. If you were confirming a booking, check My VIERCYS
-            first: a connection error does not mean the reservation failed.
-          </p>
-        </div>
-        <button type="button" className="closing-cta" onClick={reset}>
+    <InfoPage
+      title="A moment to reconnect."
+      kicker="We could not finish that request"
+      intro="Please try again. If you were confirming a booking, check My VIERCYS first: a connection error does not mean the reservation failed."
+    >
+      <div className={sections.links} role="alert">
+        <button type="button" className={ui.primary} onClick={reset}>
           Try again
         </button>
-        <Link className="text-link" href="/my-stay">
-          Check your reservations ↗
+        <Link className={ui.ghost} href="/my-stay">
+          Check your reservations
         </Link>
-        <Link className="text-link" href="/book">
-          Return to booking search ↗
+        <Link className={ui.textLink} href="/book">
+          Return to booking search <span aria-hidden="true">→</span>
         </Link>
-      </main>
-      <Footer />
-    </>
+      </div>
+    </InfoPage>
   );
 }
