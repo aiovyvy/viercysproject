@@ -82,7 +82,7 @@ If `publish` already exists, inspect it rather than adding it again. If the remo
 ## Vercel Hobby preparation — no deployment performed
 
 1. In your existing Vercel account, import the intended GitHub repository only when you are ready to publish. Import can immediately create a production deployment.
-2. Select the repository root, Next.js preset, Node 24 and `npm run build`. Keep the project's `.next-build` configuration; let the Next.js preset handle output. Select `ux-rebuild` as the production branch if that is the branch you intend to publish.
+2. Select the repository root, Next.js preset, Node 24 and `npm run build`. Leave Output Directory at its framework default: the project now generates the standard `.next` directory. Select `ux-rebuild` as the production branch if that is the branch you intend to publish.
 3. Add the server variables from the table to **Production**, including the existing Turso token and the same initialized manager password. Set `APP_URL` to the exact assigned `https://…vercel.app` address. If that address becomes known only after import, update the variable and redeploy before testing booking links. The production API fails closed without a valid HTTPS canonical URL.
 4. Do not give Preview deployments production database credentials by default: previews would write to the same real class database. Explicitly configure them only when you intend that behavior; otherwise their database-backed routes fail closed.
 5. After publishing by your own explicit action, test one invitation, booking, confirmation, manager login, and email status. Verify records survive a redeployment. Optional Resend webhooks use `/api/email-webhook` and a private signing secret.
