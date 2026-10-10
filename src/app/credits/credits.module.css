@@ -1,0 +1,28 @@
+.wrap {
+  overflow-x: auto;
+}
+.table {
+  width: 100%;
+  min-width: 520px;
+  border-collapse: collapse;
+  font-size: 16px;
+}
+.table th,
+.table td {
+  text-align: left;
+  padding: 14px 12px 14px 0;
+  border-bottom: 1px solid #233f4b22;
+  vertical-align: top;
+}
+.table th {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #4b4d47;
+}
+.table a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}

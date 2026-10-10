@@ -3,112 +3,32 @@
  * philosophy and rooms by day, the destination and experiences at golden
  * hour, and a blue-hour invitation to book at the end.
  */
-.page,
-.finale {
-  --limestone: #ebe3d6;
-  --sand: #c6ad85;
-  --deep: #17303a;
-  --accent: #233f4b;
-  --serif: var(--font-display), Georgia, serif;
-  --sans: var(--font-text), Arial, sans-serif;
-}
 .page {
-  font-family: var(--sans);
-  font-size: 17px;
-  line-height: 1.65;
-  color: var(--ink);
-  overflow-x: clip;
-}
-.page h1,
-.page h2,
-.page h3 {
-  font-family: var(--serif);
-  font-weight: 500;
-  letter-spacing: -0.01em;
-  line-height: 1.02;
+  composes: page from "../editorial/ui.module.css";
 }
 .page h2 {
   font-size: clamp(40px, 5vw, 74px);
 }
-.page h2 em,
-.page h1 em {
-  font-style: italic;
-  font-weight: 400;
-}
 .kicker {
-  font-family: var(--sans);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--accent);
-  margin-bottom: 18px;
+  composes: kicker from "../editorial/ui.module.css";
 }
 .sectionHead {
-  max-width: 720px;
-  margin-bottom: 56px;
-}
-.sectionHead > p:last-child {
-  margin-top: 18px;
-  color: #4b4d47;
-  max-width: 54ch;
-}
-.primary,
-.primaryLight,
-.ghostLight {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 52px;
-  padding: 0 28px;
-  font-family: var(--sans);
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  transition:
-    background 0.25s,
-    color 0.25s;
+  composes: sectionHead from "../editorial/ui.module.css";
 }
 .primary {
-  background: var(--deep);
-  color: #fff;
-}
-.primary:hover {
-  background: var(--accent);
+  composes: primary from "../editorial/ui.module.css";
 }
 .primaryLight {
-  background: #f8f4ec;
-  color: var(--deep);
-}
-.primaryLight:hover {
-  background: var(--sand);
+  composes: primaryLight from "../editorial/ui.module.css";
 }
 .ghostLight {
-  border: 1px solid #ffffffb3;
-  color: #fff;
-}
-.ghostLight:hover {
-  background: #ffffff22;
-}
-.textLink,
-.inlineLink {
-  font-weight: 600;
-  color: var(--deep);
-  text-decoration: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 6px;
+  composes: ghostLight from "../editorial/ui.module.css";
 }
 .textLink {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
+  composes: textLink from "../editorial/ui.module.css";
 }
-.textLink span {
-  transition: transform 0.3s;
-}
-.textLink:hover span {
-  transform: translateX(5px);
+.inlineLink {
+  composes: inlineLink from "../editorial/ui.module.css";
 }
 
 /* ---------- Hero: arrival ---------- */
@@ -217,74 +137,6 @@
     opacity: 0;
     transform: translateY(30px);
   }
-}
-
-/* ---------- Search forms ---------- */
-.searchBar,
-.searchCard {
-  display: grid;
-  font-family: var(--sans);
-}
-.searchBar {
-  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
-  background: rgb(248 244 236 / 0.94);
-  backdrop-filter: blur(10px);
-  color: var(--ink);
-}
-.searchCard {
-  grid-template-columns: 1fr 1fr;
-  gap: 1px;
-  background: #233f4b33;
-  border: 1px solid #233f4b33;
-}
-.searchBar label,
-.searchCard label {
-  display: grid;
-  padding: 12px 18px;
-  background: transparent;
-}
-.searchCard label {
-  background: #fff;
-}
-.searchBar label + label {
-  border-left: 1px solid #233f4b26;
-}
-.searchBar span,
-.searchCard span {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: #4b4d47;
-}
-.searchBar input,
-.searchBar select,
-.searchCard input,
-.searchCard select {
-  border: 0;
-  background: transparent;
-  font-size: 16px;
-  min-height: 44px;
-  width: 100%;
-  color: var(--ink);
-}
-.searchBar button,
-.searchCard button {
-  border: 0;
-  background: var(--deep);
-  color: #fff;
-  font-size: 15px;
-  font-weight: 600;
-  padding: 0 32px;
-  min-height: 56px;
-  transition: background 0.25s;
-}
-.searchBar button:hover,
-.searchCard button:hover {
-  background: var(--accent);
-}
-.searchCard button {
-  grid-column: 1 / -1;
 }
 
 /* ---------- Plan your stay ---------- */
@@ -957,12 +809,6 @@
   .heroCopy {
     grid-template-columns: 1fr;
   }
-  .searchBar {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-  .searchBar button {
-    grid-column: 1 / -1;
-  }
   .showcase {
     grid-template-columns: 1fr;
   }
@@ -973,12 +819,6 @@
 
 /* ---------- Phone ---------- */
 @media (max-width: 860px) {
-  .page {
-    font-size: 16px;
-  }
-  .sectionHead {
-    margin-bottom: 36px;
-  }
   .hero {
     min-height: calc(100svh - 76px);
   }

@@ -1,0 +1,137 @@
+/* Information pages: editorial header, one readable column, no motion. */
+.page {
+  padding-bottom: 96px;
+}
+.head {
+  padding: 56px 6vw 64px;
+  background: var(--limestone);
+}
+.head > * {
+  max-width: 860px;
+  margin-inline: auto;
+}
+.head h1 {
+  font-size: clamp(46px, 5.6vw, 84px);
+}
+.intro {
+  margin-top: 20px;
+  font-size: 20px;
+  line-height: 1.55;
+  color: #3f413c;
+}
+.intro a,
+.body a {
+  font-weight: 600;
+  color: var(--deep);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.crumbs {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 28px;
+  font-size: 14px;
+  color: #4b4d47;
+}
+.crumbs a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.body {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 56px 6vw 0;
+  box-sizing: content-box;
+}
+/* Cards and lists from the shared booking styles, given editorial type. */
+.body :global(.book-card) {
+  background: #fbf8f2;
+  border: 1px solid #233f4b1a;
+  padding: 28px 32px;
+  margin: 0 0 18px;
+}
+.body :global(.book-card) > h2,
+.body h2 {
+  font-family: var(--serif);
+  font-size: 30px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  margin-bottom: 10px;
+}
+.body p,
+.body li {
+  font-size: 17px;
+  line-height: 1.65;
+  color: #3f413c;
+}
+.body p + p {
+  margin-top: 12px;
+}
+.body :global(details.book-card) {
+  padding: 0;
+}
+.body :global(details.book-card) summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 64px;
+  padding: 14px 28px;
+  font-family: var(--serif);
+  font-size: 24px;
+  line-height: 1.25;
+  cursor: pointer;
+  list-style: none;
+}
+.body :global(details.book-card) summary::-webkit-details-marker {
+  display: none;
+}
+.body :global(details.book-card) summary::after {
+  content: "+";
+  flex: none;
+  font-family: var(--sans);
+  font-size: 22px;
+  color: var(--accent);
+}
+.body :global(details.book-card)[open] summary::after {
+  content: "−";
+}
+.body :global(details.book-card) > p {
+  padding: 0 28px 24px;
+}
+.footnote {
+  max-width: 860px;
+  margin: 48px auto 0;
+  padding: 0 6vw;
+  box-sizing: content-box;
+  font-size: 14px;
+  color: #5d5e58;
+}
+@media (max-width: 860px) {
+  .head {
+    padding: 28px 20px 44px;
+  }
+  .intro {
+    font-size: 18px;
+  }
+  .body {
+    padding: 36px 20px 0;
+  }
+  .body :global(.book-card) {
+    padding: 22px 20px;
+  }
+  .body :global(details.book-card) summary {
+    padding: 14px 20px;
+    font-size: 21px;
+  }
+  .body :global(details.book-card) > p {
+    padding: 0 20px 20px;
+  }
+  .footnote {
+    padding: 0 20px;
+  }
+}

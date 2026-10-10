@@ -24,7 +24,7 @@ test("desktop shows links without a stray Menu button; mid-width uses the menu",
   await mid.close();
 });
 
-test("mobile menu closes with Escape or an outside tap and links to real pages", async ({
+test("mobile menu closes with Escape or its Close button and links to real pages", async ({
   browser,
 }) => {
   const context = await browser.newContext({ ...devices["iPhone 13"] });
@@ -40,11 +40,8 @@ test("mobile menu closes with Escape or an outside tap and links to real pages",
     page.getByRole("button", { name: "Open navigation" }),
   ).toBeFocused();
   await page.getByRole("button", { name: "Open navigation" }).click();
-  // Tap below the open menu panel.
-  const panel = await page
-    .getByRole("navigation", { name: "Main navigation" })
-    .boundingBox();
-  await page.mouse.click(20, panel!.y + panel!.height + 40);
+  // The full-screen menu closes from its own Close button.
+  await page.getByRole("button", { name: "Close navigation" }).click();
   await expect(
     page.getByRole("button", { name: "Open navigation" }),
   ).toBeVisible();

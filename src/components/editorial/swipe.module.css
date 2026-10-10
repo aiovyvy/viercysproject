@@ -1,0 +1,53 @@
+.gallery {
+  position: relative;
+}
+.track {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  border-radius: 999px 999px 0 0;
+  aspect-ratio: 4 / 4.6;
+}
+.track:focus-visible {
+  outline: 3px solid var(--sand);
+  outline-offset: 4px;
+}
+.slide {
+  position: relative;
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+}
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  font-family: var(--sans);
+  font-size: 14px;
+  letter-spacing: 0.1em;
+}
+.controls button {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid #233f4b40;
+  background: transparent;
+  color: var(--ink);
+  font-size: 18px;
+  transition:
+    background 0.25s,
+    opacity 0.25s;
+}
+.controls button:hover:not(:disabled) {
+  background: var(--accent-soft);
+}
+.controls button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+@media (max-width: 860px) {
+  .track {
+    aspect-ratio: 4 / 3.6;
+  }
+}

@@ -19,7 +19,9 @@ test("homepage has one clear booking entry that works before scrolling", async (
 }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/");
-  await expect(page.locator(".nav .book")).toHaveText("Book a stay");
+  await expect(
+    page.getByRole("banner").getByRole("link", { name: "Book a stay" }),
+  ).toBeVisible();
   await expect(page.getByRole("heading", { level: 1 })).toContainText(
     "Where Earth",
   );

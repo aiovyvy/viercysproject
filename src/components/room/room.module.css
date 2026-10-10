@@ -3,18 +3,7 @@
  * and hero composition (arched portrait, Aegean horizon, sunset panorama).
  */
 .page {
-  --limestone: #ebe3d6;
-  --sand: #c6ad85;
-  --deep: #17303a;
-  --accent: #233f4b;
-  --accent-soft: #233f4b14;
-  --serif: var(--font-display), Georgia, serif;
-  --sans: var(--font-text), Arial, sans-serif;
-  font-family: var(--sans);
-  font-size: 17px;
-  line-height: 1.65;
-  color: var(--ink);
-  overflow-x: clip;
+  composes: page from "../editorial/ui.module.css";
 }
 .page[data-tier="essential"] {
   --accent: #59604c;
@@ -24,26 +13,14 @@
   --accent: #7a5a34;
   --accent-soft: #7a5a3417;
 }
-.page h1,
-.page h2,
-.page h3 {
-  font-family: var(--serif);
-  font-weight: 500;
-  letter-spacing: -0.01em;
-  line-height: 1.05;
-}
 .page h2 {
   font-size: clamp(36px, 4.2vw, 58px);
 }
-.kicker,
+.kicker {
+  composes: kicker from "../editorial/ui.module.css";
+}
 .mood {
-  font-family: var(--sans);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--accent);
-  margin-bottom: 14px;
+  composes: kicker from "../editorial/ui.module.css";
 }
 
 /* ---------- Hero ---------- */
@@ -133,33 +110,11 @@
   letter-spacing: 0.04em;
   line-height: 1.6;
 }
-.primary,
-.ghost {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 52px;
-  padding: 0 28px;
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  transition:
-    background 0.25s,
-    color 0.25s,
-    transform 0.25s;
-}
 .primary {
-  background: var(--deep);
-  color: #fff;
-}
-.primary:hover {
-  background: var(--accent);
+  composes: primary from "../editorial/ui.module.css";
 }
 .ghost {
-  border: 1px solid currentColor;
-}
-.ghost:hover {
-  background: color-mix(in srgb, currentColor 12%, transparent);
+  composes: ghost from "../editorial/ui.module.css";
 }
 
 /* Essential: copy on limestone beside an arch-topped portrait. */
@@ -476,12 +431,7 @@
 
 /* ---------- Gallery ---------- */
 .sectionHead {
-  max-width: 760px;
-  margin-bottom: 48px;
-}
-.sectionHead > p:last-child:not(.kicker) {
-  margin-top: 16px;
-  color: #4b4d47;
+  composes: sectionHead from "../editorial/ui.module.css";
 }
 .gallery {
   max-width: 1400px;
@@ -679,138 +629,12 @@
   max-width: 1280px;
   margin-inline: auto;
 }
-.story {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 8vw;
-  max-width: 1280px;
-  margin: 0 auto;
-}
-.storyFrame {
-  position: sticky;
-  top: 120px;
-  height: min(72vh, 640px);
-  border-radius: 999px 999px 0 0;
-  overflow: hidden;
-  background: #0c1519;
-}
-.storyPhoto {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  transform: scale(1.06);
-  transition:
-    opacity 0.9s ease,
-    transform 1.4s cubic-bezier(0.2, 0.7, 0.2, 1);
-}
-.storyPhoto[data-active="true"] {
-  opacity: 1;
-  transform: none;
-}
-.storyCount {
-  position: absolute;
-  left: 50%;
-  bottom: 22px;
-  translate: -50% 0;
-  font-family: var(--serif);
-  font-size: 22px;
-  color: #fff;
-  text-shadow: 0 1px 12px rgb(0 0 0 / 0.5);
-}
-.storyCount span {
-  opacity: 0.7;
-}
-.chapters {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.chapter {
-  min-height: 72vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  opacity: 0.35;
-  transition: opacity 0.6s;
-}
-.chapter[data-active="true"] {
-  opacity: 1;
-}
-.chapter h3 {
-  font-size: clamp(34px, 3.4vw, 50px);
-  margin-bottom: 18px;
-}
-.chapter p:last-child {
-  font-size: 19px;
-  max-width: 36ch;
-  color: #e7e1d6;
-}
-.chapterNumber {
-  font-family: var(--serif);
-  font-size: 20px;
-  color: var(--sand);
-  margin-bottom: 12px;
-}
-.chapterPhoto {
-  display: none;
-}
 
 /* ---------- Compare + related ---------- */
 .compare {
   max-width: 1280px;
   margin: 0 auto;
   padding: 120px 6vw 120px;
-}
-.tableWrap {
-  overflow-x: auto;
-}
-.table {
-  width: 100%;
-  min-width: 620px;
-  border-collapse: collapse;
-  font-size: 16px;
-}
-.table th,
-.table td {
-  text-align: left;
-  padding: 16px 18px;
-  border-bottom: 1px solid #233f4b22;
-  vertical-align: top;
-}
-.table thead th {
-  font-family: var(--serif);
-  font-size: 26px;
-  font-weight: 500;
-  line-height: 1.1;
-}
-.table thead th small {
-  display: block;
-  font-family: var(--sans);
-  font-size: 12px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--accent);
-  margin-top: 6px;
-}
-.table thead a {
-  display: inline-flex;
-  min-height: 44px;
-  align-items: center;
-  text-decoration: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 6px;
-}
-.table tbody th {
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: #4b4d47;
-  width: 140px;
-}
-.table [aria-current="page"],
-.table td[data-current] {
-  background: var(--accent-soft);
 }
 .related {
   list-style: none;
@@ -875,11 +699,7 @@
 }
 
 /* ---------- Mobile booking dock ---------- */
-/* Rendered outside .page, so it carries its own tokens. */
 .dock {
-  --deep: #17303a;
-  --serif: var(--font-display), Georgia, serif;
-  --sans: var(--font-text), Arial, sans-serif;
   display: none;
 }
 
@@ -910,16 +730,11 @@
   .lightboxImage {
     animation: none;
   }
-  .storyPhoto,
-  .chapter,
   .tile img,
   .relatedCard,
   .relatedPhoto img,
   .tileCaption {
     transition: none;
-  }
-  .storyPhoto {
-    transform: none;
   }
 }
 
@@ -940,9 +755,6 @@
   }
 }
 @media (max-width: 860px) {
-  .page {
-    font-size: 16px;
-  }
   .hero {
     min-height: 0;
   }
@@ -1064,40 +876,8 @@
   .storyBand {
     padding: 80px 20px;
   }
-  .story {
-    grid-template-columns: 1fr;
-  }
-  .storyFrame {
-    display: none;
-  }
-  .chapter {
-    min-height: 0;
-    opacity: 1;
-    padding-bottom: 56px;
-  }
-  .chapterPhoto {
-    display: block;
-    position: relative;
-    aspect-ratio: 4 / 3;
-    margin-bottom: 24px;
-    border-radius: 999px 999px 0 0;
-    overflow: hidden;
-  }
   .compare {
     padding: 80px 20px 96px;
-  }
-  .table {
-    font-size: 15px;
-    min-width: 560px;
-  }
-  .table thead th {
-    font-size: 21px;
-  }
-  .table tbody th {
-    position: sticky;
-    left: 0;
-    background: var(--ivory);
-    width: 96px;
   }
   .relatedCard {
     grid-template-columns: 1fr;

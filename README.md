@@ -93,32 +93,6 @@ SQLite deployment requires a single Node host and persistent writable disk, not 
 
 All images are temporary stock/editorial inspiration, not actual VIERCYS property or category photographs. Replace them with coherent approved room/architecture imagery before presenting this as a real property. Full motion/fallback/asset details are in `docs/CINEMATIC.md`. Mobile, coarse pointer and reduced-motion modes retain normal vertical flow without loading the 3D scene. The homepage booking form also renders without JavaScript; completing a booking requires JavaScript.
 
-| Local file | Original source |
-| --- | --- |
-| public/images/santorini.jpg | https://images.unsplash.com/photo-1613395877344-13d4a8e0d49e |
-| public/images/architecture.jpg | https://images.unsplash.com/photo-1533105079780-92b9be482077 |
-| public/images/boracay.jpg | Laurentiu Morariu: https://unsplash.com/photos/NR-2_RIb62k |
-| public/images/amalfi.jpg | Sylvain Perona: https://unsplash.com/photos/N32Di3LG-t0 |
-| public/images/bali.jpg | https://images.unsplash.com/photo-1537996194471-e657df975ab4 |
-
-Room pages, booking room cards and most homepage sections use `public/images/santorini/` (Openverse / Wikimedia Commons). CC BY images must keep their credit, which the room-page lightbox shows on every photo:
-
-| Local file | Creator | License | Source |
-| --- | --- | --- | --- |
-| santorini/oia-sunset.jpg | kuhnmi | CC BY 2.0 | https://commons.wikimedia.org/wiki/File:Sunset_in_Oia1.jpg |
-| santorini/oia-evening.jpg | kuhnmi | CC BY 2.0 | https://commons.wikimedia.org/wiki/File:Sunset_in_Santorini1.jpg |
-| santorini/white-stair.jpg | Klearchos Kapoutsis | CC BY 2.0 | https://commons.wikimedia.org/wiki/File:Is_it_waiting_us%3F_(2790256647).jpg |
-| santorini/parasols.jpg | Klearchos Kapoutsis | CC BY 2.0 | https://commons.wikimedia.org/wiki/File:Parasols_(2784723537).jpg |
-| santorini/stone-door.jpg | Klearchos Kapoutsis | CC BY 2.0 | https://commons.wikimedia.org/wiki/File:Old_Door_(4346766078).jpg |
-| santorini/caldera-table.jpg | Klearchos Kapoutsis | CC BY 2.0 | https://commons.wikimedia.org/wiki/File:A_table,_two_chairs_and_an_umbrella..._(2260966802).jpg |
-| santorini/courtyard-door.jpg (cropped) | Winniepix | CC BY 2.0 | https://commons.wikimedia.org/wiki/File:Traditional_houses_beneath_the_churches_in_Firostefani,_Santorini,_Greece_(34473665406).jpg |
-| santorini/caldera-dusk.jpg | Sgroey | CC BY 4.0 | https://commons.wikimedia.org/wiki/File:View_of_Caldera_at_Sunset_from_Imerovigli,_Santorini.jpg |
-| santorini/sea-terrace.jpg | rawpixel | CC0 | https://www.rawpixel.com/image/5924623 |
-| santorini/caldera-pool.jpg | rawpixel | CC0 | https://www.rawpixel.com/image/5963329 |
-| santorini/cliff-pools.jpg | rawpixel | CC0 | https://www.rawpixel.com/image/6054528 |
-| santorini/chapel-arch.jpg | rawpixel | CC0 | https://www.rawpixel.com/image/6036805 |
-| santorini/blue-hour.jpg | kuhnmi | CC BY 2.0 | https://commons.wikimedia.org/wiki/File:Blue_Hour_in_Santorini_-_Flickr_-_kuhnmi.jpg |
-| santorini/fira-sunset.jpg | Alexandros | CC BY 3.0 | https://commons.wikimedia.org/wiki/File:Sunset_-_Fira.JPG |
-| santorini/sailing.jpg | rawpixel | CC0 | rawpixel via Openverse ("Yacht sailing sea") |
+Every photograph, with creator, licence and source, is listed in `src/lib/credits.ts` and shown to guests at **/credits** (CC BY images must keep that credit). No photograph shows a VIERCYS property; room interiors still need to be generated or supplied (see `docs/ux/m1/MILESTONE-1.md`).
 
 Review the Unsplash license (https://unsplash.com/license) and replacement rights. The pre-existing Microsoft.Services.Store.winmd is preserved.

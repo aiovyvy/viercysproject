@@ -1,0 +1,367 @@
+/*
+ * Philosophy: six chapters, each with its own scroll-driven treatment.
+ * All motion is CSS scroll timelines (progressive enhancement); without
+ * support, or with reduced motion, every chapter is static and complete.
+ */
+.page section[id] {
+  scroll-margin-top: 140px;
+}
+.page h2 {
+  font-size: clamp(40px, 5vw, 72px);
+}
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* 1. Nature: arch window opening to full width. */
+.nature {
+  position: relative;
+  min-height: 130vh;
+  display: grid;
+  align-items: end;
+  padding: 0 6vw 12vh;
+  color: #fff;
+  isolation: isolate;
+}
+.natureFrame {
+  position: sticky;
+  top: 140px;
+  grid-area: 1 / 1;
+  align-self: start;
+  height: calc(100vh - 180px);
+  margin-inline: -6vw;
+  overflow: hidden;
+  z-index: -1;
+}
+.natureFrame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(0deg, rgb(10 24 30 / 0.8), rgb(10 24 30 / 0.1) 60%);
+}
+.natureCopy {
+  grid-area: 1 / 1;
+  max-width: 640px;
+  padding-bottom: 6vh;
+}
+.natureCopy p:last-child,
+.meetCopy p:last-child,
+.privacyCopy p:last-child {
+  font-size: 19px;
+  margin-top: 24px;
+  max-width: 44ch;
+}
+.nature .natureCopy :global(p:first-child),
+.privacy .privacyCopy :global(p:first-child) {
+  color: #f0e2c6;
+}
+
+/* 2. Earth and sea: two panels converge on the copy. */
+.meet {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.9fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 4vw;
+  padding: 140px 0;
+  overflow: hidden;
+}
+.meetPanel {
+  position: relative;
+  height: min(70vh, 620px);
+  overflow: hidden;
+}
+.meetPanel span {
+  position: absolute;
+  left: 20px;
+  bottom: 16px;
+  font-family: var(--serif);
+  font-size: 30px;
+  font-style: italic;
+  color: #fff;
+  text-shadow: 0 1px 14px rgb(0 0 0 / 0.5);
+}
+.earth {
+  border-radius: 0 999px 999px 0 / 0 50% 50% 0;
+}
+.sea {
+  border-radius: 999px 0 0 999px / 50% 0 0 50%;
+}
+.meetCopy {
+  text-align: center;
+}
+.meetCopy p:last-child {
+  margin-inline: auto;
+}
+
+/* 3. Slow: each word lights up as it scrolls into the reading line. */
+.slow {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 120px 6vw 160px;
+}
+.slowText {
+  font-family: var(--serif);
+  font-size: clamp(36px, 4.6vw, 68px);
+  line-height: 1.18;
+  color: var(--ink);
+}
+
+/* 4. Hospitality */
+.hospitality {
+  padding: 120px 6vw;
+  background: #f8f4ec;
+}
+.hospitality > header {
+  max-width: 1280px;
+  margin-inline: auto;
+}
+
+/* 5. Privacy: the photo pulls back to reveal the horizon. */
+.privacy {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: 6vw;
+  align-items: center;
+  padding: 140px 6vw;
+  background: var(--deep);
+  color: #f3eee5;
+}
+.privacyFrame {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 999px 999px 0 0;
+}
+
+/* 6. Craft: material studies at staggered depths. */
+.craft {
+  padding: 140px 6vw 120px;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+.materials {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 24px;
+}
+.materials li:nth-child(even) {
+  margin-top: 80px;
+}
+.materialPhoto {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border-radius: 999px 999px 0 0;
+}
+.swatch {
+  display: block;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  margin: -22px 0 14px 20px;
+  position: relative;
+  border: 3px solid var(--ivory);
+}
+.materials h3 {
+  font-size: 30px;
+}
+.materials p {
+  margin-top: 6px;
+  color: #4b4d47;
+  max-width: 28ch;
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .natureFrame {
+      animation: openArch linear both;
+      animation-timeline: view();
+      animation-range: entry 10% cover 40%;
+    }
+    .natureCopy {
+      animation: rise linear both;
+      animation-timeline: view();
+      animation-range: entry 40% cover 55%;
+    }
+    .earth {
+      animation: fromLeft linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 50%;
+    }
+    .sea {
+      animation: fromRight linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 50%;
+    }
+    .slowText span {
+      animation: read linear both;
+      animation-timeline: view();
+      animation-range: entry 80% cover 45%;
+    }
+    .privacyFrame img {
+      animation: pullBack linear both;
+      animation-timeline: view();
+    }
+    .materials li {
+      animation: driftA linear both;
+      animation-timeline: view();
+    }
+    .materials li:nth-child(even) {
+      animation-name: driftB;
+    }
+  }
+}
+@keyframes openArch {
+  from {
+    clip-path: inset(6% 30% 0 30% round 999px 999px 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0 round 0);
+  }
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+}
+@keyframes fromLeft {
+  from {
+    transform: translateX(-40%);
+    opacity: 0.3;
+  }
+}
+@keyframes fromRight {
+  from {
+    transform: translateX(40%);
+    opacity: 0.3;
+  }
+}
+/* Unread words stay above the 3:1 large-text contrast minimum. */
+@keyframes read {
+  from {
+    opacity: 0.55;
+  }
+}
+@keyframes pullBack {
+  from {
+    transform: scale(1.35);
+  }
+}
+@keyframes driftA {
+  from {
+    transform: translateY(40px);
+  }
+  to {
+    transform: translateY(-40px);
+  }
+}
+@keyframes driftB {
+  from {
+    transform: translateY(90px);
+  }
+  to {
+    transform: translateY(-90px);
+  }
+}
+
+@media (max-width: 1100px) {
+  .meet {
+    grid-template-columns: 1fr 1fr;
+    padding: 100px 6vw;
+  }
+  .meetCopy {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    margin-bottom: 24px;
+  }
+  .earth,
+  .sea {
+    border-radius: 999px 999px 0 0;
+  }
+  .materials {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .materials li:nth-child(even) {
+    margin-top: 48px;
+  }
+}
+@media (max-width: 860px) {
+  .page section[id] {
+    scroll-margin-top: 128px;
+  }
+  .nature {
+    min-height: 0;
+    padding: 0;
+    color: inherit;
+  }
+  .natureFrame {
+    position: relative;
+    top: 0;
+    height: auto;
+    aspect-ratio: 4 / 4.4;
+    margin: 0 20px;
+    border-radius: 999px 999px 0 0;
+  }
+  .natureFrame::after {
+    display: none;
+  }
+  .natureCopy {
+    grid-area: auto;
+    padding: 36px 20px 72px;
+    /* Already in reading position on phones; no reveal needed. */
+    animation: none;
+  }
+  .nature .natureCopy :global(p:first-child) {
+    color: var(--accent);
+  }
+  .meet {
+    gap: 12px;
+    padding: 72px 20px;
+  }
+  .meetPanel {
+    height: 260px;
+  }
+  .meetCopy {
+    text-align: left;
+  }
+  .meetCopy p:last-child {
+    margin-inline: 0;
+  }
+  .slow {
+    padding: 72px 20px 96px;
+  }
+  .hospitality {
+    padding: 80px 20px;
+  }
+  .privacy {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    padding: 88px 20px;
+  }
+  .craft {
+    padding: 88px 20px;
+  }
+  .materials {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 70%;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 12px;
+  }
+  .materials li {
+    scroll-snap-align: start;
+  }
+  .materials li:nth-child(even) {
+    margin-top: 0;
+  }
+}

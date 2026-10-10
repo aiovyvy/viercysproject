@@ -18,7 +18,8 @@ import {
 import { available } from "@/lib/booking";
 import { AMENITY_GROUPS, ROOM_EDITORIAL } from "@/lib/rooms-editorial";
 import { RoomGallery } from "@/components/room/RoomGallery";
-import { RoomStory } from "@/components/room/RoomStory";
+import { ScrollStory } from "@/components/editorial/ScrollStory";
+import { RoomCompare } from "@/components/editorial/RoomCompare";
 import { RoomDock } from "@/components/room/RoomDock";
 import { AmenityIcon } from "@/components/room/AmenityIcon";
 import styles from "@/components/room/room.module.css";
@@ -79,10 +80,6 @@ export default async function RoomPage({
     ),
   })).filter((group) => group.items.length > 0);
   const others = CATEGORIES.filter((item) => item.id !== room.id);
-  const beds = (item: (typeof CATEGORIES)[number]) =>
-    item.amenities.filter((a) => /bed/i.test(a)).join(" + ");
-  const terrace = (item: (typeof CATEGORIES)[number]) =>
-    item.amenities.find((a) => /terrace/i.test(a)) ?? "—";
 
   return (
     <>
@@ -110,7 +107,7 @@ export default async function RoomPage({
           </div>
           <div className={styles.heroCopy}>
             <nav aria-label="Breadcrumb" className={styles.crumbs}>
-              <Link href={`/book/rooms?${query}`}>Rooms &amp; Suites</Link>
+              <Link href={`/rooms?${query}`}>Rooms &amp; Suites</Link>
               <span aria-hidden="true">/</span>
               <span aria-current="page">{room.name}</span>
             </nav>
@@ -137,7 +134,7 @@ export default async function RoomPage({
                 <small>per night, taxes included</small>
               </p>
               <a className={styles.primary} href="#reserve">
-                Book a Stay
+                Book a stay
               </a>
               <a className={styles.ghost} href="#gallery">
                 View photographs
@@ -297,7 +294,7 @@ export default async function RoomPage({
                 )}
               </div>
               <Link className={styles.primary} href={bookHref}>
-                {bookable ? "Book a Stay" : "See all rooms for these dates"}
+                {bookable ? "Book a stay" : "See all rooms for these dates"}
               </Link>
               <p className={styles.voucher}>
                 {upgrade === 0
@@ -335,7 +332,7 @@ export default async function RoomPage({
             <p className={styles.kicker}>Why this room</p>
             <h2 id="story-title">Three reasons to stay</h2>
           </header>
-          <RoomStory chapters={editorial.chapters} />
+          <ScrollStory chapters={editorial.chapters} />
         </section>
 
         <section
@@ -346,62 +343,7 @@ export default async function RoomPage({
             <p className={styles.kicker}>Rooms &amp; Suites</p>
             <h2 id="compare-title">Find the right room</h2>
           </header>
-          <div
-            className={styles.tableWrap}
-            tabIndex={0}
-            role="region"
-            aria-label="Room comparison, scrolls sideways on small screens"
-          >
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <td />
-                  {CATEGORIES.map((item) => (
-                    <th
-                      key={item.id}
-                      scope="col"
-                      aria-current={item.id === room.id ? "page" : undefined}
-                    >
-                      {item.id === room.id ? (
-                        <>
-                          {item.name}
-                          <small>You are viewing</small>
-                        </>
-                      ) : (
-                        <Link href={`/rooms/${item.id}?${query}`}>
-                          {item.name}
-                        </Link>
-                      )}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {(
-                  [
-                    ["Space", (i) => `${i.size} m²`],
-                    ["View", (i) => i.view],
-                    ["Sleeps", (i) => `Up to ${i.capacity}`],
-                    ["Beds", beds],
-                    ["Outdoors", terrace],
-                    ["Per night", (i) => money(i.rate)],
-                  ] as [string, (i: (typeof CATEGORIES)[number]) => string][]
-                ).map(([label, value]) => (
-                  <tr key={label}>
-                    <th scope="row">{label}</th>
-                    {CATEGORIES.map((item) => (
-                      <td
-                        key={item.id}
-                        data-current={item.id === room.id || undefined}
-                      >
-                        {value(item)}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <RoomCompare current={room.id} query={query} />
           <ul className={styles.related}>
             {others.map((item) => {
               const other = ROOM_EDITORIAL[item.id];

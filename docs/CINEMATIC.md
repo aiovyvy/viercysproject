@@ -26,12 +26,10 @@ Existing files are temporary editorial stock photographs recorded in README.md, 
 
 | Path | Usage | Replacement needed |
 | --- | --- | --- |
-| public/images/santorini.jpg | Opening hero, Santorini gallery and island setting preview | Limestone cliffside retreat in warm natural light with readable blue sea; landscape crop, preferably 2400px wide |
-| public/images/architecture.jpg | Photographic courtyard behind 3D limestone arch; architecture preview | A coherent sunlit courtyard facing the sea, open central horizon and limestone walls; landscape crop, preferably 2400px wide |
+| public/images/santorini.jpg | Homepage opening hero | Limestone cliffside retreat in warm natural light with readable blue sea; landscape crop, preferably 2400px wide |
+| public/images/architecture.jpg | Photographic courtyard behind 3D limestone arch | A coherent sunlit courtyard facing the sea, open central horizon and limestone walls; landscape crop, preferably 2400px wide |
 | public/images/santorini/caldera-table.jpg | Final frame of the passage ("Twenty rooms") | Licensed CC BY 2.0 terrace photo (see README); replace with an approved VIERCYS terrace or suite image |
-| public/images/boracay.jpg | Coming-soon Boracay gallery | Tropical shoreline establishing photograph, at least 1600px wide |
-| public/images/amalfi.jpg | Coming-soon Amalfi gallery | Coastal architecture establishing photograph, at least 1600px wide |
-| public/images/bali.jpg | Coming-soon Bali gallery | Quiet tropical architectural/landscape establishing photograph, at least 1600px wide |
+| public/images/destinations/*.jpg | Destinations explorer, previews and homepage "Next horizons" | Licensed CC BY photos of each real place (see /credits); they are concepts, not properties |
 
 Replace photographs at those paths and update descriptive alt text in experience.tsx, destination/property pages, ArchitecturalJourney.tsx and src/lib/rooms-editorial.ts. Homepage and room photographs describe the Santorini setting, not the fictional property. Actual category galleries require separate approved Essential, Signature and Grand room images.
 

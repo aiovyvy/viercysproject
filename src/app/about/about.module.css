@@ -1,0 +1,89 @@
+.idea,
+.project {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 32px 6vw;
+}
+.idea h2,
+.project h2 {
+  font-size: clamp(38px, 4.4vw, 62px);
+}
+.ideaText p,
+.projectText > p {
+  font-size: 19px;
+  color: #3f413c;
+}
+.ideaText p + p {
+  margin-top: 16px;
+}
+.numbers {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 40px 0 0;
+  border-top: 1px solid #233f4b26;
+}
+.numbers div {
+  padding: 24px 0;
+}
+.numbers div + div {
+  padding-left: 24px;
+  border-left: 1px solid #233f4b26;
+}
+.numbers dt {
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #4b4d47;
+}
+.numbers dd {
+  margin: 6px 0 0;
+  font-family: var(--serif);
+  font-size: clamp(48px, 5vw, 72px);
+  line-height: 1;
+  color: var(--deep);
+}
+.truths {
+  list-style: none;
+  margin: 28px 0 0;
+  padding: 0;
+}
+.truths li {
+  padding: 18px 0;
+  border-top: 1px solid #233f4b26;
+  color: #3f413c;
+}
+.truths strong {
+  display: block;
+  font-family: var(--serif);
+  font-size: 24px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.truths a,
+.projectText a {
+  font-weight: 600;
+  color: var(--deep);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+@media (max-width: 860px) {
+  .idea,
+  .project {
+    grid-template-columns: 1fr;
+  }
+  .ideaText p,
+  .projectText > p {
+    font-size: 17px;
+  }
+  .numbers {
+    grid-template-columns: 1fr 1fr;
+  }
+  .numbers div:nth-child(3) {
+    padding-left: 0;
+    border-left: 0;
+  }
+  .numbers div:nth-child(n + 3) {
+    border-top: 1px solid #233f4b26;
+  }
+}

@@ -1,0 +1,33 @@
+.amenities {
+  margin-top: 16px;
+  font-size: 15px;
+  opacity: 0.85;
+  max-width: 44ch;
+}
+.check {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
+  gap: 6vw;
+  align-items: center;
+}
+.checkCopy > p:not(:first-child) {
+  margin-top: 18px;
+  max-width: 46ch;
+}
+.help {
+  color: #4b4d47;
+}
+.checkCard {
+  background: #fbf8f2;
+  padding: 32px;
+  box-shadow: 0 40px 70px -50px rgb(23 48 58 / 0.5);
+}
+@media (max-width: 860px) {
+  .check {
+    grid-template-columns: 1fr;
+    gap: 36px;
+  }
+  .checkCard {
+    padding: 20px;
+  }
+}

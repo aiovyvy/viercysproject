@@ -1,0 +1,117 @@
+/* Pinned-photo chapters shared by room, destination and editorial pages. */
+.story {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8vw;
+  max-width: 1280px;
+  margin: 0 auto;
+  --story-mark: var(--accent);
+}
+.story[data-tone="dark"] {
+  --story-mark: var(--sand);
+}
+.frame {
+  position: sticky;
+  top: 120px;
+  height: min(72vh, 640px);
+  border-radius: 999px 999px 0 0;
+  overflow: hidden;
+  background: #0c1519;
+}
+.photo {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transform: scale(1.06);
+  transition:
+    opacity 0.9s ease,
+    transform 1.4s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.photo[data-active="true"] {
+  opacity: 1;
+  transform: none;
+}
+.count {
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  translate: -50% 0;
+  font-family: var(--serif);
+  font-size: 22px;
+  color: #fff;
+  text-shadow: 0 1px 12px rgb(0 0 0 / 0.5);
+}
+.count span {
+  opacity: 0.7;
+}
+.chapters {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.chapter {
+  min-height: 72vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  opacity: 0.35;
+  transition: opacity 0.6s;
+}
+.chapter[data-active="true"] {
+  opacity: 1;
+}
+.chapter h3 {
+  font-size: clamp(34px, 3.4vw, 50px);
+  margin-bottom: 18px;
+}
+.body {
+  font-size: 19px;
+  max-width: 38ch;
+  opacity: 0.9;
+}
+.number {
+  font-family: var(--serif);
+  font-size: 20px;
+  color: var(--story-mark);
+  margin-bottom: 12px;
+}
+.number span {
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.inlinePhoto {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .photo,
+  .chapter {
+    transition: none;
+  }
+  .photo {
+    transform: none;
+  }
+}
+@media (max-width: 860px) {
+  .story {
+    grid-template-columns: 1fr;
+  }
+  .frame {
+    display: none;
+  }
+  .chapter {
+    min-height: 0;
+    opacity: 1;
+    padding-bottom: 56px;
+  }
+  .inlinePhoto {
+    display: block;
+    position: relative;
+    aspect-ratio: 4 / 3;
+    margin-bottom: 24px;
+    border-radius: 999px 999px 0 0;
+    overflow: hidden;
+  }
+}

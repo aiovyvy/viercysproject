@@ -5,6 +5,14 @@
   --olive: #737766;
   --gold: #c6ad85;
   --ink: #292c28;
+  /* Editorial design system (see components/editorial/ui.module.css). */
+  --limestone: #ebe3d6;
+  --sand: #c6ad85;
+  --deep: #17303a;
+  --accent: #233f4b;
+  --accent-soft: #233f4b14;
+  --serif: var(--font-display), Georgia, serif;
+  --sans: var(--font-text), Arial, sans-serif;
 }
 * {
   box-sizing: border-box;

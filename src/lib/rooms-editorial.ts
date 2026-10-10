@@ -1,4 +1,5 @@
 import type { CategoryId } from "@/lib/catalog";
+import type { StoryChapter } from "@/components/editorial/ScrollStory";
 
 /**
  * Editorial presentation for the room detail pages. Facts (size, view,
@@ -105,7 +106,6 @@ const PHOTOS = {
   },
 } satisfies Record<string, Photo>;
 
-export type Chapter = { title: string; body: string; photo: Photo };
 
 export type RoomEditorial = {
   /** Hero composition: an arched portrait beside the copy, or full-bleed. */
@@ -117,7 +117,7 @@ export type RoomEditorial = {
   statement: string;
   atmosphere: string[];
   gallery: Photo[];
-  chapters: Chapter[];
+  chapters: StoryChapter[];
   bestFor: string;
 };
 

@@ -1,0 +1,128 @@
+/*
+ * Shared editorial primitives for every redesigned page. Page modules pull
+ * these in with `composes` so buttons, labels and type stay identical.
+ * Colour and font tokens live on :root in globals.css.
+ */
+.page {
+  font-family: var(--sans);
+  font-size: 17px;
+  line-height: 1.65;
+  color: var(--ink);
+  overflow-x: clip;
+}
+.page h1,
+.page h2,
+.page h3 {
+  font-family: var(--serif);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1.04;
+}
+/* Default section heading size; page modules may override with .page h2. */
+:where(.page) h2 {
+  font-size: clamp(38px, 4.4vw, 62px);
+}
+:where(.page) h3 {
+  font-size: clamp(26px, 2.4vw, 34px);
+}
+.page h1 em,
+.page h2 em {
+  font-style: italic;
+  font-weight: 400;
+}
+.kicker {
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 16px;
+}
+.sectionHead {
+  max-width: 740px;
+  margin-bottom: 52px;
+}
+.sectionHead > p:last-child:not(:first-child) {
+  margin-top: 16px;
+  color: #4b4d47;
+  max-width: 56ch;
+}
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 0 28px;
+  font-family: var(--sans);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition:
+    background 0.25s,
+    color 0.25s;
+}
+.primary {
+  composes: button;
+  background: var(--deep);
+  color: #fff;
+}
+.primary:hover {
+  background: var(--accent);
+}
+.primaryLight {
+  composes: button;
+  background: #f8f4ec;
+  color: var(--deep);
+}
+.primaryLight:hover {
+  background: var(--sand);
+}
+.ghost {
+  composes: button;
+  border: 1px solid currentColor;
+}
+.ghost:hover {
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+.ghostLight {
+  composes: button;
+  border: 1px solid #ffffffb3;
+  color: #fff;
+}
+.ghostLight:hover {
+  background: #ffffff22;
+}
+.inlineLink {
+  font-weight: 600;
+  color: var(--deep);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 6px;
+}
+.textLink {
+  composes: inlineLink;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+}
+.textLink span {
+  transition: transform 0.3s;
+}
+.textLink:hover span {
+  transform: translateX(5px);
+}
+@media (max-width: 860px) {
+  .page {
+    font-size: 16px;
+  }
+  .sectionHead {
+    margin-bottom: 36px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .textLink span {
+    transition: none;
+  }
+}

@@ -1,17 +1,26 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { photos } from "./data";
-import { StaySearch } from "@/components/home/StaySearch";
+import { StaySearch } from "@/components/editorial/StaySearch";
 import { RoomsShowcase } from "@/components/home/RoomsShowcase";
 import { Experiences } from "@/components/home/Experiences";
 import { FinalInvitation } from "@/components/home/FinalInvitation";
 import home from "@/components/home/home.module.css";
+import { DESTINATIONS } from "@/lib/destinations";
 import ArchitecturalJourney from "@/components/cinematic/ArchitecturalJourney";
+import { BookLink } from "@/components/site/BookLink";
+
+// The site chrome lives in components/site; these names are kept for the
+// many pages that import them from here.
+export { BookLink } from "@/components/site/BookLink";
+export { SiteHeader as Navigation } from "@/components/site/SiteHeader";
+export { SiteFooter as Footer } from "@/components/site/SiteFooter";
+import { SiteHeader as Navigation } from "@/components/site/SiteHeader";
+import { SiteFooter as Footer } from "@/components/site/SiteFooter";
 
 export function Photo({
   src,
@@ -34,102 +43,6 @@ export function Photo({
       loading={priority ? "eager" : "lazy"}
       fetchPriority={priority ? "high" : "auto"}
     />
-  );
-}
-function useVoucherActive() {
-  const [active, setActive] = useState(false);
-  useEffect(() => {
-    let live = true;
-    fetch("/api/invite", { cache: "no-store" })
-      .then((response) => response.json())
-      .then((result) => live && setActive(result.active === true))
-      .catch(() => {});
-    return () => {
-      live = false;
-    };
-  }, []);
-  return active;
-}
-export function BookLink({ className }: { className: string }) {
-  const voucher = useVoucherActive();
-  return (
-    <Link className={className} href="/book">
-      {voucher ? "Claim your 3-night stay" : "Book a stay"}
-    </Link>
-  );
-}
-export function Navigation() {
-  const [open, setOpen] = useState(false);
-  const path = usePathname();
-  const inFlow = path.startsWith("/book") || path.startsWith("/invite");
-  // Room pages show their own room-specific booking dock on phones.
-  const roomPage = path.startsWith("/rooms/");
-  const header = useRef<HTMLElement>(null);
-  const toggle = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    // Escape or a tap outside closes the menu; Escape returns focus to it.
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      setOpen(false);
-      toggle.current?.focus();
-    };
-    const onPointer = (event: PointerEvent) => {
-      if (!header.current?.contains(event.target as Node)) setOpen(false);
-    };
-    document.addEventListener("keydown", onKey);
-    document.addEventListener("pointerdown", onPointer);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.removeEventListener("pointerdown", onPointer);
-    };
-  }, [open]);
-  return (
-    <>
-      <a className="skip" href="#main">
-        Skip to content
-      </a>
-      <header className="nav" ref={header}>
-        <Link href="/" className="wordmark" aria-label="VIERCYS home">
-          VIERCYS<span>HOTELS & RESORTS</span>
-        </Link>
-        <nav
-          aria-label="Main navigation"
-          className={open ? "navlinks open" : "navlinks"}
-        >
-          <Link href="/#story" onClick={() => setOpen(false)}>
-            Our philosophy
-          </Link>
-          <Link href="/destinations" onClick={() => setOpen(false)}>
-            Destinations
-          </Link>
-          <Link href="/my-stay" onClick={() => setOpen(false)}>
-            My VIERCYS
-          </Link>
-          <Link href="/concierge" onClick={() => setOpen(false)}>
-            Concierge
-          </Link>
-          <Link href="/faq" onClick={() => setOpen(false)}>
-            FAQ
-          </Link>
-        </nav>
-        {!inFlow && <BookLink className="book" />}
-        <button
-          ref={toggle}
-          className="menu"
-          aria-label={open ? "Close navigation" : "Open navigation"}
-          aria-expanded={open}
-          onClick={() => setOpen(!open)}
-        >
-          {open ? "Close" : "Menu"}
-        </button>
-      </header>
-      {!inFlow && !roomPage && (
-        <nav aria-label="Quick booking">
-          <BookLink className="mobile-book-action" />
-        </nav>
-      )}
-    </>
   );
 }
 export default function Home() {
@@ -397,30 +310,24 @@ export default function Home() {
               tabIndex={0}
             >
               <ul className={home.horizonList}>
-                {[
-                  {
-                    name: "Boracay",
-                    country: "Philippines",
-                    photo: photos.boracay,
-                  },
-                  { name: "Amalfi", country: "Italy", photo: photos.amalfi },
-                  { name: "Bali", country: "Indonesia", photo: photos.bali },
-                ].map((place) => (
-                  <li key={place.name}>
-                    <div className={home.horizonPhoto}>
-                      <Image
-                        src={place.photo}
-                        alt={`${place.name}, ${place.country}`}
-                        fill
-                        sizes="(max-width: 860px) 60vw, 20vw"
-                      />
-                    </div>
-                    <p>
-                      <strong>{place.name}</strong> {place.country} · Coming
-                      soon
-                    </p>
-                  </li>
-                ))}
+                {DESTINATIONS.filter((place) => !place.bookable).map(
+                  (place) => (
+                    <li key={place.name}>
+                      <div className={home.horizonPhoto}>
+                        <Image
+                          src={place.photo.src}
+                          alt={place.photo.alt}
+                          fill
+                          sizes="(max-width: 860px) 60vw, 20vw"
+                        />
+                      </div>
+                      <p>
+                        <strong>{place.name}</strong> {place.country} · Coming
+                        soon
+                      </p>
+                    </li>
+                  ),
+                )}
               </ul>
             </div>
           </div>
@@ -448,63 +355,5 @@ export default function Home() {
       </main>
       <Footer />
     </div>
-  );
-}
-export function Footer() {
-  return (
-    <footer>
-      <div className="footer-brand">
-        <Link href="/" className="wordmark">
-          VIERCYS<span>HOTELS & RESORTS</span>
-        </Link>
-        <p>Where Earth Meets the Sea.</p>
-      </div>
-      <nav className="footer-links" aria-label="Footer">
-        <ul>
-          <li>
-            <Link href="/santorini">Santorini</Link>
-          </li>
-          <li>
-            <Link href="/destinations">Destinations</Link>
-          </li>
-          <li>
-            <Link href="/about">About</Link>
-          </li>
-          <li>
-            <Link href="/faq">FAQ</Link>
-          </li>
-          <li>
-            <Link href="/contact">Contact</Link>
-          </li>
-        </ul>
-        <ul>
-          <li>
-            <Link href="/book">Book a stay</Link>
-          </li>
-          <li>
-            <Link href="/lookup">Find my booking</Link>
-          </li>
-          <li>
-            <Link href="/privacy">Privacy</Link>
-          </li>
-          <li>
-            <Link href="/terms">Terms</Link>
-          </li>
-          <li>
-            <Link href="/accessibility">Accessibility</Link>
-          </li>
-        </ul>
-      </nav>
-      <div className="footer-legal">
-        <span>
-          © {new Date().getFullYear()} VIERCYS · Fictional concept hotel
-        </span>
-        <small>
-          Classroom demonstration: no real bookings or payments. Temporary
-          editorial photography, not original property photographs.{" "}
-          <Link href="/admin">Staff</Link>
-        </small>
-      </div>
-    </footer>
   );
 }

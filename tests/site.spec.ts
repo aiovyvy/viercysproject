@@ -128,6 +128,12 @@ test("no sideways scrolling at 320px and 44px tap targets on key pages", async (
     "/concierge",
     "/rooms/essential",
     "/rooms/grand",
+    "/rooms",
+    "/philosophy",
+    "/experiences",
+    "/destinations",
+    "/santorini",
+    "/credits",
     ...INFO,
   ]) {
     await page.goto(path);
@@ -193,6 +199,10 @@ test("no serious or critical accessibility violations on any page", async ({
     "/santorini",
     "/destinations",
     "/destinations/bali",
+    "/rooms",
+    "/philosophy",
+    "/experiences",
+    "/credits",
     "/admin",
     ...INFO,
   ];

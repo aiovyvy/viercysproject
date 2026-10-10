@@ -29,7 +29,7 @@ export function RoomDock({ name, rate }: { name: string; rate: string }) {
         <strong>{name}</strong>
         <span>{rate} / night · taxes incl.</span>
       </p>
-      <a href="#reserve">Book a Stay</a>
+      <a href="#reserve">Book a stay</a>
     </div>
   );
 }

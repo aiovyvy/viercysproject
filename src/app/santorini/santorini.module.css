@@ -1,0 +1,100 @@
+.rooms {
+  list-style: none;
+  margin: 0 0 24px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+.rooms li:nth-child(2) {
+  margin-top: 56px;
+}
+.room {
+  display: grid;
+  gap: 6px;
+  color: var(--ink);
+}
+.roomPhoto {
+  position: relative;
+  display: block;
+  aspect-ratio: 3 / 4;
+  margin-bottom: 12px;
+  border-radius: 999px 999px 0 0;
+  overflow: hidden;
+}
+.roomPhoto img {
+  transition: transform 1.1s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.room:hover .roomPhoto img,
+.room:focus-visible .roomPhoto img {
+  transform: scale(1.05);
+}
+.roomMood {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.room strong {
+  font-family: var(--serif);
+  font-size: 34px;
+  font-weight: 500;
+  line-height: 1.1;
+}
+.room > span:not([class]) {
+  color: #4b4d47;
+}
+.roomFacts {
+  font-size: 14px;
+  color: #5d5e58;
+}
+.roomRate {
+  font-weight: 600;
+  color: var(--deep);
+}
+.know {
+  display: grid;
+  grid-template-columns: minmax(0, 0.6fr) minmax(0, 1.4fr);
+  gap: 6vw;
+}
+.know h2 {
+  font-size: clamp(38px, 4.4vw, 60px);
+}
+.know dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 40px;
+}
+.know dl div {
+  padding: 20px 0;
+  border-top: 1px solid #233f4b26;
+}
+.know dt {
+  font-family: var(--serif);
+  font-size: 24px;
+  margin-bottom: 6px;
+}
+.know dd {
+  margin: 0;
+  color: #4b4d47;
+}
+@media (prefers-reduced-motion: reduce) {
+  .roomPhoto img {
+    transition: none;
+  }
+}
+@media (max-width: 860px) {
+  .rooms {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+  .rooms li:nth-child(2) {
+    margin-top: 0;
+  }
+  .know,
+  .know dl {
+    grid-template-columns: 1fr;
+  }
+}
