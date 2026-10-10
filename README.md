@@ -2,6 +2,8 @@
 
 A working fictional Santorini reservation application: Next.js 16.4 App Router, React 19, TypeScript, Tailwind CSS, GSAP ScrollTrigger, React Three Fiber, persistent SQLite, React Email rendering and optional Resend/OpenAI integrations. No actual accommodation, transport, activities or money is booked.
 
+**Guides:** [Staff sign-in](docs/STAFF_LOGIN.md) · [Production readiness, hosting and email plan](docs/PRODUCTION_READINESS.md) · [Backend](docs/BACKEND.md) · Redesign notes in `docs/ux/m1…m4`.
+
 ## Launch locally in PowerShell
 
 Use Node.js **22.18 or newer**; this backend uses `node:sqlite`. Dependencies are already installed in this workspace.
